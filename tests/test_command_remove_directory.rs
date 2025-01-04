@@ -13,7 +13,7 @@ fn test_remove_empty_directory() -> Result<(), io::Error> {
         fs::create_dir_all(dir.clone())?;
         remove_directory(&dir, Some(false))?;
 
-        assert!(!dir.exists(), "The directory was not removed.");
+        assert!(!dir.exists(), "The directory {:?} should be removed.", dir);
     }
 
     Ok(())
@@ -30,7 +30,7 @@ fn test_remove_empty_directory_force() -> Result<(), io::Error> {
         fs::create_dir_all(dir.clone())?;
         remove_directory(&dir, Some(true))?;
 
-        assert!(!dir.exists(), "The directory was not removed.");
+        assert!(!dir.exists(), "The directory {:?} should be removed.", dir);
     }
 
     Ok(())
@@ -51,7 +51,7 @@ fn test_remove_non_empty_directory() -> Result<(), io::Error> {
 
         let _ = remove_directory(&dir, Some(false));
 
-        assert!(dir.exists(), "The directory should still exist");
+        assert!(dir.exists(), "The directory {:?} should still exist.", dir);
     }
 
     Ok(())
@@ -72,7 +72,7 @@ fn test_remove_non_empty_directory_force() -> Result<(), io::Error> {
 
         let _ = remove_directory(&dir, Some(true));
 
-        assert!(!dir.exists(), "The directory was not removed.");
+        assert!(!dir.exists(), "The directory {:?} should be removed.", dir);
     }
 
     Ok(())

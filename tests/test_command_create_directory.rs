@@ -17,7 +17,7 @@ fn test_create_directory() -> Result<(), io::Error> {
         let dir = temp_dir.path().join(directory);
 
         create_directory(&dir)?;
-        assert!(dir.exists(), "The directory should have been created.");
+        assert!(dir.exists(), "The directory {:?} should be created.", dir);
     }
 
     Ok(())

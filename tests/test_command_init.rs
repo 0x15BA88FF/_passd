@@ -15,10 +15,7 @@ fn test_init() -> Result<(), io::Error> {
 
     init(&store_path, pgp_keys.clone())?;
 
-    assert!(
-        store_path.exists(),
-        "The store directory should exist after running `init`."
-    );
+    assert!(store_path.exists(), "The store directory should exist.");
 
     let gpg_id_path = store_path.join(".gpg-id");
 
