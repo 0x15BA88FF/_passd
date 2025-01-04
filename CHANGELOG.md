@@ -31,6 +31,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- update `init` `path` parameter type from `path::PathBuf` to `&path::Path`
+- update `init` `path` parameter type from `path::PathBuf` to `&path::Path`.
 
 [unreleased]: https://github.com/0x15BA88FF/passd/compare/main%40%7B1day%7D...main
