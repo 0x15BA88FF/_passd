@@ -1,71 +1,78 @@
-use std::{
-    io,
-    fs
-}
-use tempfile:tempdir;
 use passd::commands::remove_directory;
+use std::{fs, io};
+use tempfile::tempdir;
 
 #[test]
-fn test_remove_directory() -> Result<(), io.Error> {
+fn test_remove_empty_directory() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
-    let empty_directories = ["new/directory", "deeply/nested\\directory"];
+    let directories = ["new/directory", "deeply/nested\\directory"];
 
-    for directory in empty_directories {
+    for directory in directories {
         let dir = temp_dir.path().join(directory);
 
-        fs::create_dir_all(dir)?;
-        remove_directory(&dir)?;
+        fs::create_dir_all(dir.clone())?;
+        remove_directory(&dir, Some(false))?;
 
-        assert!(dir.exists(), "The directory was not removed.");
-    }
-
-    let non_empty_directories = ["directory", "deeply/nested\\directory"];
-
-    for directory in non_empty_directories {
-        let dir = temp_dir.path().join(directory);
-        let sub_dir = dir.path().join("example_dir");
-        let file = sub_dir.path().join("example_file.txt");
-
-        fs::create_dir(dir)?;
-        fs::create_dir_all(sub)?;
-        fs::write(&file, "This is a test file.")?;
-
-        remove_directory(&dir)?;
-
-        assert!(!dir.exists(), "directory should not be removed.");
+        assert!(!dir.exists(), "The directory was not removed.");
     }
 
     Ok(())
 }
 
 #[test]
-fn test_remove_directory_force() -> Result<(), io.Error> {
+fn test_remove_empty_directory_force() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
-    let empty_directories = ["new/directory", "deeply/nested\\directory"];
+    let directories = ["new/directory", "deeply/nested\\directory"];
 
-    for directory in empty_directories {
+    for directory in directories {
         let dir = temp_dir.path().join(directory);
 
-        fs::create_dir_all(dir)?;
-        remove_directory(&dir)?;
+        fs::create_dir_all(dir.clone())?;
+        remove_directory(&dir, Some(true))?;
 
-        assert!(dir.exists(), "The directory was not removed.");
+        assert!(!dir.exists(), "The directory was not removed.");
     }
 
-    let non_empty_directories = ["directory", "deeply/nested\\directory"];
+    Ok(())
+}
 
-    for directory in non_empty_directories {
+#[test]
+fn test_remove_non_empty_directory() -> Result<(), io::Error> {
+    let temp_dir = tempdir()?;
+    let directories = ["directory", "deeply/nested\\directory"];
+
+    for directory in directories {
         let dir = temp_dir.path().join(directory);
-        let sub_dir = dir.path().join("example_dir");
-        let file = sub_dir.path().join("example_file.txt");
+        let sub_dir = dir.as_path().join("example_dir");
+        let file = sub_dir.as_path().join("example_file.txt");
 
-        fs::create_dir(dir)?;
-        fs::create_dir_all(sub)?;
+        fs::create_dir_all(sub_dir)?;
         fs::write(&file, "This is a test file.")?;
 
-        remove_directory(&dir)?;
+        let _ = remove_directory(&dir, Some(false));
 
-        assert!(dir.exists(), "directory should be removed.");
+        assert!(dir.exists(), "The directory should still exist");
+    }
+
+    Ok(())
+}
+
+#[test]
+fn test_remove_non_empty_directory_force() -> Result<(), io::Error> {
+    let temp_dir = tempdir()?;
+    let directories = ["directory", "deeply/nested\\directory"];
+
+    for directory in directories {
+        let dir = temp_dir.path().join(directory);
+        let sub_dir = dir.as_path().join("example_dir");
+        let file = sub_dir.as_path().join("example_file.txt");
+
+        fs::create_dir_all(sub_dir)?;
+        fs::write(&file, "This is a test file.")?;
+
+        let _ = remove_directory(&dir, Some(true));
+
+        assert!(!dir.exists(), "The directory was not removed.");
     }
 
     Ok(())
