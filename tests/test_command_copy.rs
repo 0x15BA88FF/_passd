@@ -1,4 +1,4 @@
-use passd::commands::copy;
+use passd::commands::copy_item;
 use std::{fs, io};
 use tempfile::tempdir;
 
@@ -8,8 +8,8 @@ fn test_command_copy_nonexistent_source() -> Result<(), io::Error> {
     let source = temp_dir.path().join("nonexistent");
     let destination = temp_dir.path().join("destination.txt");
 
-    let result = copy(&source, &destination, Some(false));
-    let result_recursive = copy(&source, &destination, Some(true));
+    let result = copy_item(&source, &destination, Some(false));
+    let result_recursive = copy_item(&source, &destination, Some(true));
 
     assert!(
         result.is_err(),
@@ -42,7 +42,7 @@ fn test_command_copy_nonexistent_destination() -> Result<(), io::Error> {
 
     fs::File::create(&source)?;
 
-    let result = copy(&source, &destination, Some(false));
+    let result = copy_item(&source, &destination, Some(false));
 
     assert!(
         result.is_err(),
@@ -54,7 +54,7 @@ fn test_command_copy_nonexistent_destination() -> Result<(), io::Error> {
         "Expected InvalidInput error kind."
     );
 
-    let result_recursive = copy(&source, &destination, Some(true));
+    let result_recursive = copy_item(&source, &destination, Some(true));
 
     assert!(
         result_recursive.is_err(),
@@ -78,7 +78,7 @@ fn test_command_copy_file_into_file() -> Result<(), io::Error> {
     fs::write(&source, "Hello World!")?;
     fs::write(&destination, "World!")?;
 
-    copy(&source, &destination, Some(false))?;
+    copy_item(&source, &destination, Some(false))?;
     let source_content = fs::read_to_string(source)?;
     let destination_content = fs::read_to_string(destination)?;
 
@@ -99,7 +99,7 @@ fn test_command_copy_file_into_file_recursive() -> Result<(), io::Error> {
     fs::write(&source, "Hello World!")?;
     fs::write(&destination, "World!")?;
 
-    copy(&source, &destination, Some(true))?;
+    copy_item(&source, &destination, Some(true))?;
     let source_content = fs::read_to_string(source)?;
     let destination_content = fs::read_to_string(destination)?;
 
@@ -121,7 +121,7 @@ fn test_command_copy_file_into_directory() -> Result<(), io::Error> {
     fs::write(&source, "Hello World!")?;
     fs::create_dir_all(&destination_dir)?;
 
-    copy(&source, &destination_dir, Some(false))?;
+    copy_item(&source, &destination_dir, Some(false))?;
     let source_content = fs::read_to_string(source)?;
     let destination_content = fs::read_to_string(destination.clone())?;
 
@@ -149,7 +149,7 @@ fn test_command_copy_file_into_directory_recursive() -> Result<(), io::Error> {
     fs::write(&source, "Hello World!")?;
     fs::create_dir_all(&destination_dir)?;
 
-    copy(&source, &destination_dir, Some(true))?;
+    copy_item(&source, &destination_dir, Some(true))?;
     let source_content = fs::read_to_string(source)?;
     let destination_content = fs::read_to_string(destination.clone())?;
 
@@ -176,7 +176,7 @@ fn test_command_copy_directory() -> Result<(), io::Error> {
     fs::create_dir_all(&source_dir)?;
     fs::create_dir_all(&destination_dir)?;
 
-    let result = copy(&source_dir, &destination_dir, Some(false));
+    let result = copy_item(&source_dir, &destination_dir, Some(false));
 
     assert!(
         result.is_err(),
@@ -213,7 +213,7 @@ fn test_command_copy_directory_recursive() -> Result<(), io::Error> {
         }
     }
 
-    copy(&source_dir, &destination_dir, Some(true))?;
+    copy_item(&source_dir, &destination_dir, Some(true))?;
 
     for subdir in source_subdir {
         let source_subdir_path = source_dir.join(subdir);

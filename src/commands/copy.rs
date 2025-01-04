@@ -3,7 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub fn copy(source: &Path, destination: &Path, recursive: Option<bool>) -> Result<(), io::Error> {
+pub fn copy_item(
+    source: &Path,
+    destination: &Path,
+    recursive: Option<bool>,
+) -> Result<(), io::Error> {
     if !source.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
@@ -45,7 +49,7 @@ pub fn copy(source: &Path, destination: &Path, recursive: Option<bool>) -> Resul
                 let mut dest_path = PathBuf::from(destination);
                 dest_path.push(entry.file_name());
 
-                copy(&entry_path, &dest_path, recursive)?;
+                copy_item(&entry_path, &dest_path, recursive)?;
             }
         } else {
             return Err(io::Error::new(
