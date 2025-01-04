@@ -13,7 +13,7 @@ fn test_init() -> Result<(), io::Error> {
         "82D910EE90DD22508192D5BB27E7044A3BEEB8ED".to_string(),
     ];
 
-    init(store_path.clone(), pgp_keys.clone())?;
+    init(&store_path, pgp_keys.clone())?;
 
     assert!(
         store_path.exists(),
