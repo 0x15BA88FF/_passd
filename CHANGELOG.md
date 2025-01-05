@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add passd `generate_password` command.
 - Add passd `move_item` command.
 - Add `force` overwrite parameter to `copy` command.
 - Add passd `copy` command.
