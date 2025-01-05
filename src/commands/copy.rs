@@ -7,6 +7,7 @@ pub fn copy_item(
     source: &Path,
     destination: &Path,
     recursive: Option<bool>,
+    force: Option<bool>
 ) -> Result<(), io::Error> {
     if !source.exists() {
         return Err(io::Error::new(
@@ -36,6 +37,13 @@ pub fn copy_item(
             destination.to_path_buf()
         };
 
+        if destination.exists() && !force.unwrap_or(false) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Existing file cannot be overwritten without force.",
+            ));
+        }
+
         fs::copy(source, destination)?;
     } else {
         if let Some(true) = recursive {
@@ -49,7 +57,7 @@ pub fn copy_item(
                 let mut dest_path = PathBuf::from(destination);
                 dest_path.push(entry.file_name());
 
-                copy_item(&entry_path, &dest_path, recursive)?;
+                copy_item(&entry_path, &dest_path, recursive, force)?;
             }
         } else {
             return Err(io::Error::new(

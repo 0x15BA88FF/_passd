@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `force` overwrite parameter to `copy` command.
 - Add passd `copy` command.
 - Add passd `remove_file` command.
 - Add passd `remove_directory` command.
