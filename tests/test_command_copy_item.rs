@@ -57,48 +57,36 @@ fn test_command_copy_nonexistent_destination() -> Result<(), io::Error> {
 #[test]
 fn test_command_copy_file_into_file() -> Result<(), io::Error> {
     for mode in [true, false] {
-        let temp_dir = tempdir()?;
-        let source = temp_dir.path().join("source.txt");
-        let destination = temp_dir.path().join("destination.txt");
+        for force in [true, false] {
+            let temp_dir = tempdir()?;
+            let source = temp_dir.path().join("source.txt");
+            let destination = temp_dir.path().join("destination.txt");
 
-        fs::write(&source, "Hello World!")?;
-        fs::write(&destination, "World!")?;
+            fs::write(&source, "Hello World!")?;
+            fs::write(&destination, "World!")?;
 
-        let result = copy_item(&source, &destination, Some(mode), Some(false));
+            let result = copy_item(&source, &destination, Some(mode), Some(force));
 
-        assert!(
-            result.is_err(),
-            "Expected error copy cannot overwrite without force."
-        );
-        assert_eq!(
-            result.unwrap_err().kind(),
-            io::ErrorKind::InvalidInput,
-            "Expected InvalidInput error kind."
-        );
-    }
+            if !force {
+                assert!(
+                    result.is_err(),
+                    "Expected error copy cannot overwrite without force."
+                );
+                assert_eq!(
+                    result.unwrap_err().kind(),
+                    io::ErrorKind::InvalidInput,
+                    "Expected InvalidInput error kind."
+                );
+            } else {
+                let source_content = fs::read_to_string(source)?;
+                let destination_content = fs::read_to_string(destination)?;
 
-    Ok(())
-}
-
-#[test]
-fn test_command_copy_file_into_file_force() -> Result<(), io::Error> {
-    for mode in [true, false] {
-        let temp_dir = tempdir()?;
-        let source = temp_dir.path().join("source.txt");
-        let destination = temp_dir.path().join("destination.txt");
-
-        fs::write(&source, "Hello World!")?;
-        fs::write(&destination, "World!")?;
-
-        copy_item(&source, &destination, Some(mode), Some(true))?;
-
-        let source_content = fs::read_to_string(source)?;
-        let destination_content = fs::read_to_string(destination)?;
-
-        assert_eq!(
-            source_content, destination_content,
-            "Source content and destination content should be equal."
-        );
+                assert_eq!(
+                    source_content, destination_content,
+                    "Source content and destination content should be equal."
+                );
+            }
+        }
     }
 
     Ok(())
