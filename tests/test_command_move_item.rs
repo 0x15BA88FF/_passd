@@ -3,7 +3,7 @@ use std::{fs, io};
 use tempfile::tempdir;
 
 #[test]
-fn test_command_move_nonexistent_source() -> Result<(), io::Error> {
+fn test_move_nonexistent_source() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
     let source = temp_dir.path().join("nonexistent");
     let destination = temp_dir.path().join("destination.txt");
@@ -28,7 +28,7 @@ fn test_command_move_nonexistent_source() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_nonexistent_destination() -> Result<(), io::Error> {
+fn test_move_nonexistent_destination() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
     let source = temp_dir.path().join("source.txt");
     let destination = temp_dir.path().join("fake/parent/destination.txt");
@@ -60,7 +60,7 @@ fn test_command_move_nonexistent_destination() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_file_into_file() -> Result<(), io::Error> {
+fn test_move_file_into_file() -> Result<(), io::Error> {
     for mode in [true, false] {
         for force in [true, false] {
             let temp_dir = tempdir()?;
@@ -108,7 +108,7 @@ fn test_command_move_file_into_file() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_file_into_directory() -> Result<(), io::Error> {
+fn test_move_file_into_directory() -> Result<(), io::Error> {
     for mode in [true, false] {
         for force in [true, false] {
             let temp_dir = tempdir()?;
@@ -145,7 +145,7 @@ fn test_command_move_file_into_directory() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_file_into_occupied_directory() -> Result<(), io::Error> {
+fn test_move_file_into_occupied_directory() -> Result<(), io::Error> {
     for mode in [true, false] {
         for force in [true, false] {
             let temp_dir = tempdir()?;
@@ -195,7 +195,7 @@ fn test_command_move_file_into_occupied_directory() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_directory_into_directory() -> Result<(), io::Error> {
+fn test_move_directory_into_directory() -> Result<(), io::Error> {
     for mode in [true, false] {
         for force in [true, false] {
             let temp_dir = tempdir()?;
@@ -278,7 +278,7 @@ fn test_command_move_directory_into_directory() -> Result<(), io::Error> {
 }
 
 #[test]
-fn test_command_move_directory_into_occupied_directory() -> Result<(), io::Error> {
+fn test_move_directory_into_occupied_directory() -> Result<(), io::Error> {
     for mode in [true, false] {
         for force in [true, false] {
             let temp_dir = tempdir()?;
