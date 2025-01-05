@@ -228,7 +228,8 @@ fn test_command_copy_directory_into_directory() -> Result<(), io::Error> {
                         );
 
                         let source_item_content = fs::read_to_string(source_item_path)?;
-                        let destination_item_content = fs::read_to_string(destination_item_path.clone())?;
+                        let destination_item_content =
+                            fs::read_to_string(destination_item_path.clone())?;
 
                         assert_eq!(
                             source_item_content, destination_item_content,
@@ -309,7 +310,8 @@ fn test_command_copy_directory_into_occupied_directory() -> Result<(), io::Error
                             );
 
                             let source_item_content = fs::read_to_string(source_item_path)?;
-                            let destination_item_content = fs::read_to_string(destination_item_path.clone())?;
+                            let destination_item_content =
+                                fs::read_to_string(destination_item_path.clone())?;
 
                             assert_eq!(
                                 source_item_content, destination_item_content,

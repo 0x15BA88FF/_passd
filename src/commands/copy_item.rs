@@ -7,7 +7,7 @@ pub fn copy_item(
     source: &Path,
     destination: &Path,
     recursive: Option<bool>,
-    force: Option<bool>
+    force: Option<bool>,
 ) -> Result<(), io::Error> {
     if !source.exists() {
         return Err(io::Error::new(
