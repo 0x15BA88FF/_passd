@@ -7,10 +7,8 @@ fn test_init() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
     let store_path = temp_dir.path().join("store");
     let pgp_keys = vec![
-        "xx@333333.me".to_string(),
-        "not@ff88ab51x0.me".to_string(),
-        "84DFC49A7A542FE385938DCAA6BD563A5FB3E2C7".to_string(),
-        "82D910EE90DD22508192D5BB27E7044A3BEEB8ED".to_string(),
+        "84DFC49A7A542FE385938DCAA6BD563A5FB3E2C7",
+        "82D910EE90DD22508192D5BB27E7044A3BEEB8ED",
     ];
 
     init(&store_path, pgp_keys.clone())?;
