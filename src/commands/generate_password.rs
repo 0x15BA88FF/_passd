@@ -3,7 +3,6 @@ use rand::Rng;
 
 #[derive(PartialEq)]
 pub enum Filter {
-    All,
     Alphabets,
     Capital,
     Numbers,
@@ -18,7 +17,13 @@ pub fn generate_password(
     separators: Option<Vec<&str>>,
 ) -> Result<String, io::Error> {
     let length = length.unwrap_or(25);
-    let filters = filter.unwrap_or_else(|| vec![Filter::All]);
+    let filters = filter.unwrap_or_else(|| vec![
+        Filter::Alphabets,
+        Filter::Capital,
+        Filter::Numbers,
+        Filter::Symbols,
+        Filter::Custom,
+    ]);
     let custom = custom.unwrap_or_default();
     let separators = separators.unwrap_or_default();
 
@@ -29,19 +34,11 @@ pub fn generate_password(
 
     let mut pool: Vec<String> = Vec::new();
 
-    if filters.contains(&Filter::All) {
-        pool.extend(lowercase);
-        pool.extend(uppercase);
-        pool.extend(numbers);
-        pool.extend(symbols);
-        pool.extend(custom);
-    } else {
-        if filters.contains(&Filter::Alphabets) { pool.extend(lowercase); }
-        if filters.contains(&Filter::Capital) { pool.extend(uppercase); }
-        if filters.contains(&Filter::Numbers) { pool.extend(numbers); }
-        if filters.contains(&Filter::Symbols) { pool.extend(symbols); }
-        if filters.contains(&Filter::Custom) { pool.extend(custom); }
-    }
+    if filters.contains(&Filter::Alphabets) { pool.extend(lowercase); }
+    if filters.contains(&Filter::Capital) { pool.extend(uppercase); }
+    if filters.contains(&Filter::Numbers) { pool.extend(numbers); }
+    if filters.contains(&Filter::Symbols) { pool.extend(symbols); }
+    if filters.contains(&Filter::Custom) { pool.extend(custom); }
 
     if pool.is_empty() {
         return Err(io::Error::new(
