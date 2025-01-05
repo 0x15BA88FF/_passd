@@ -1,5 +1,5 @@
-use std::io;
 use rand::Rng;
+use std::io;
 
 #[derive(PartialEq)]
 pub enum Filter {
@@ -7,7 +7,7 @@ pub enum Filter {
     Capital,
     Numbers,
     Symbols,
-    Custom
+    Custom,
 }
 
 pub fn generate_password(
@@ -17,33 +17,54 @@ pub fn generate_password(
     separators: Option<Vec<&str>>,
 ) -> Result<String, io::Error> {
     let length = length.unwrap_or(25);
-    let filters = filter.unwrap_or_else(|| vec![
-        Filter::Alphabets,
-        Filter::Capital,
-        Filter::Numbers,
-        Filter::Symbols,
-        Filter::Custom,
-    ]);
+    let filters = filter.unwrap_or_else(|| {
+        vec![
+            Filter::Alphabets,
+            Filter::Capital,
+            Filter::Numbers,
+            Filter::Symbols,
+            Filter::Custom,
+        ]
+    });
     let custom = custom.unwrap_or_default();
     let separators = separators.unwrap_or_default();
 
     let numbers: Vec<String> = "0123456789".chars().map(|c| c.to_string()).collect();
-    let lowercase: Vec<String> = "abcdefghijklmnopqrstuvwxyz".chars().map(|c| c.to_string()).collect();
-    let uppercase: Vec<String> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".chars().map(|c| c.to_string()).collect();
-    let symbols: Vec<String> = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~".chars().map(|c| c.to_string()).collect();
+    let lowercase: Vec<String> = "abcdefghijklmnopqrstuvwxyz"
+        .chars()
+        .map(|c| c.to_string())
+        .collect();
+    let uppercase: Vec<String> = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        .chars()
+        .map(|c| c.to_string())
+        .collect();
+    let symbols: Vec<String> = "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
+        .chars()
+        .map(|c| c.to_string())
+        .collect();
 
     let mut pool: Vec<String> = Vec::new();
 
-    if filters.contains(&Filter::Alphabets) { pool.extend(lowercase); }
-    if filters.contains(&Filter::Capital) { pool.extend(uppercase); }
-    if filters.contains(&Filter::Numbers) { pool.extend(numbers); }
-    if filters.contains(&Filter::Symbols) { pool.extend(symbols); }
-    if filters.contains(&Filter::Custom) { pool.extend(custom); }
+    if filters.contains(&Filter::Alphabets) {
+        pool.extend(lowercase);
+    }
+    if filters.contains(&Filter::Capital) {
+        pool.extend(uppercase);
+    }
+    if filters.contains(&Filter::Numbers) {
+        pool.extend(numbers);
+    }
+    if filters.contains(&Filter::Symbols) {
+        pool.extend(symbols);
+    }
+    if filters.contains(&Filter::Custom) {
+        pool.extend(custom);
+    }
 
     if pool.is_empty() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            "No characters available in the pool to generate a password."
+            "No characters available in the pool to generate a password.",
         ));
     }
 
