@@ -1,9 +1,9 @@
-use passd::commands::init;
+use passd::commands::initialize;
 use std::{fs, io};
 use tempfile::tempdir;
 
 #[test]
-fn test_init() -> Result<(), io::Error> {
+fn test_initialize() -> Result<(), io::Error> {
     let temp_dir = tempdir()?;
     let store_path = temp_dir.path().join("store");
     let pgp_keys = vec![
@@ -11,7 +11,7 @@ fn test_init() -> Result<(), io::Error> {
         "82D910EE90DD22508192D5BB27E7044A3BEEB8ED",
     ];
 
-    init(&store_path, pgp_keys.clone())?;
+    initialize(&store_path, pgp_keys.clone())?;
 
     assert!(store_path.exists(), "The store directory should exist.");
 
