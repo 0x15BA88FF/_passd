@@ -10,7 +10,7 @@ use passd::commands::{
 
 #[test]
 fn test_list_items_invalid_path() {
-    let result = list_items(Path::new("/non/existent/path", Some(false));
+    let result = list_items(Path::new("/non/existent/path"), Some(false));
 
     assert!(
         result.is_err(),
