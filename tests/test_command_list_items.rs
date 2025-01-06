@@ -1,21 +1,11 @@
-use std::{
-    io,
-    fs,
-    path::Path
-};
-use passd::commands::{
-    list_items,
-    list_items::EntryType,
-};
+use passd::commands::{list_items, list_items::EntryType};
+use std::{fs, io, path::Path};
 
 #[test]
 fn test_list_items_invalid_path() {
     let result = list_items(Path::new("/non/existent/path"), Some(false));
 
-    assert!(
-        result.is_err(),
-        "Expected error invalid path."
-    );
+    assert!(result.is_err(), "Expected error invalid path.");
     assert_eq!(
         result.unwrap_err().kind(),
         io::ErrorKind::InvalidInput,
@@ -35,8 +25,12 @@ fn test_list_items_non_recursive() -> io::Result<()> {
     let items = list_items(temp_path, Some(false))?;
 
     assert_eq!(items.len(), 2);
-    assert!(items.iter().any(|i| i.name == "file1.txt" && matches!(i.r#type, EntryType::File)));
-    assert!(items.iter().any(|i| i.name == "subdir" && matches!(i.r#type, EntryType::Directory)));
+    assert!(items
+        .iter()
+        .any(|i| i.name == "file1.txt" && matches!(i.r#type, EntryType::File)));
+    assert!(items
+        .iter()
+        .any(|i| i.name == "subdir" && matches!(i.r#type, EntryType::Directory)));
     assert!(items.iter().all(|i| i.children.is_none()));
 
     Ok(())
@@ -62,9 +56,12 @@ fn test_list_items_recursive() -> io::Result<()> {
 
     assert!(subdir.children.is_some());
     assert_eq!(subdir.children.as_ref().unwrap().len(), 1);
-    assert!(subdir.children.as_ref().unwrap().iter()
-        .any(|i| i.name == "file2.txt" && matches!(i.r#type, EntryType::File))
-    );
+    assert!(subdir
+        .children
+        .as_ref()
+        .unwrap()
+        .iter()
+        .any(|i| i.name == "file2.txt" && matches!(i.r#type, EntryType::File)));
 
     Ok(())
 }

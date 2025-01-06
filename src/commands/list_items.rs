@@ -1,7 +1,6 @@
 use std::{
-    fs,
-    io,
-    path::{Path, PathBuf}
+    fs, io,
+    path::{Path, PathBuf},
 };
 
 #[derive(Debug)]
@@ -9,19 +8,16 @@ pub struct EntryInfo {
     pub name: String,
     pub path: PathBuf,
     pub r#type: EntryType,
-    pub children: Option<Vec<EntryInfo>>
+    pub children: Option<Vec<EntryInfo>>,
 }
 
 #[derive(PartialEq, Debug)]
 pub enum EntryType {
     File,
-    Directory
+    Directory,
 }
 
-pub fn list_items(
-    path: &Path,
-    recursive: Option<bool>,
-) -> Result<Vec<EntryInfo>, io::Error> {
+pub fn list_items(path: &Path, recursive: Option<bool>) -> Result<Vec<EntryInfo>, io::Error> {
     let mut items = Vec::new();
     let recursive = recursive.unwrap_or(false);
 
