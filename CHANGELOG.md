@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add passd `decrypt_string` util.
 - Add passd `encrypt_string` util.
 - Add passd `list_items` command.
 - Add passd `find_items` command.
