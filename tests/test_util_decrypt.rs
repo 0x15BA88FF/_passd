@@ -1,7 +1,6 @@
+use passd::utils::decrypt::decrypt_string;
 use pgp;
 use std::fs;
-use passd::utils::decrypt::decrypt_string;
-
 
 #[test]
 fn test_decrypt_invalid_key() -> Result<(), pgp::errors::Error> {

@@ -1,13 +1,16 @@
+use passd::utils::encrypt::encrypt_string;
 use pgp;
 use std::fs;
-use passd::utils::encrypt::encrypt_string;
 
 #[test]
 fn test_encrypt_invalid_key() -> Result<(), pgp::errors::Error> {
     let invalid_key = fs::read_to_string("tests/assets/keys/invalid_pub.asc")?;
     let result = encrypt_string("Hello, world!", &[&invalid_key]);
 
-    assert!(result.is_err(), "Encryption should fail with an invalid key");
+    assert!(
+        result.is_err(),
+        "Encryption should fail with an invalid key"
+    );
 
     Ok(())
 }
@@ -17,7 +20,10 @@ fn test_encrypt_sign_key() -> Result<(), pgp::errors::Error> {
     let signing_key = fs::read_to_string("tests/assets/keys/signing_pub.asc")?;
     let result = encrypt_string("Hello, world!", &[&signing_key]);
 
-    assert!(result.is_err(), "Encryption with a signing key may not be valid");
+    assert!(
+        result.is_err(),
+        "Encryption with a signing key may not be valid"
+    );
 
     Ok(())
 }
