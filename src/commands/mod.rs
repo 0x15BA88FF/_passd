@@ -10,6 +10,7 @@ pub mod move_item;
 pub mod read_file;
 pub mod remove_directory;
 pub mod remove_file;
+pub mod search_content;
 pub mod write_file;
 
 pub use copy_item::copy_item;
@@ -24,4 +25,5 @@ pub use move_item::move_item;
 pub use read_file::read_file;
 pub use remove_directory::remove_directory;
 pub use remove_file::remove_file;
+pub use search_content::filter_lines;
 pub use write_file::write_file;
