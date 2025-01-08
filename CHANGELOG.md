@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Move `src/utils/encrypt` utility to `src/commands/encrypt`.
 - Rename `init` command to `Initialize`.
 - Update `init` `pgp_keys` parameter type from `String` to `&str`.
 - Update `copy` command function name from `copy` to `copy_item`.

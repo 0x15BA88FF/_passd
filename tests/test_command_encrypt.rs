@@ -1,4 +1,4 @@
-use passd::utils::encrypt::encrypt_string;
+use passd::commands::encrypt_string;
 use pgp;
 use std::fs;
 

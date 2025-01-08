@@ -1,2 +1,3 @@
 pub mod decrypt;
-pub mod encrypt;
+
+pub use decrypt::decrypt_string;

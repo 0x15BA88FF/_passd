@@ -1,5 +1,6 @@
 pub mod copy_item;
 pub mod create_directory;
+pub mod encrypt;
 pub mod find_items;
 pub mod generate_password;
 pub mod initialize;
@@ -10,6 +11,7 @@ pub mod remove_file;
 
 pub use copy_item::copy_item;
 pub use create_directory::create_directory;
+pub use encrypt::encrypt_string;
 pub use find_items::find_items;
 pub use generate_password::generate_password;
 pub use initialize::initialize;
