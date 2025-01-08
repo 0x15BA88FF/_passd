@@ -7,6 +7,7 @@ pub mod generate_password;
 pub mod initialize;
 pub mod list_items;
 pub mod move_item;
+pub mod read_file;
 pub mod remove_directory;
 pub mod remove_file;
 
@@ -19,5 +20,6 @@ pub use generate_password::generate_password;
 pub use initialize::initialize;
 pub use list_items::list_items;
 pub use move_item::move_item;
+pub use read_file::read_file;
 pub use remove_directory::remove_directory;
 pub use remove_file::remove_file;
