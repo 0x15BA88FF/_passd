@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+http-body-util = "0.1.2"
 hyper = "1.5.2"
 pgp = "0.14.2"
 rand = "0.8.5"
