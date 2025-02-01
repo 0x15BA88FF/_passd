@@ -27,3 +27,11 @@ pub use remove_directory::remove_directory;
 pub use remove_file::remove_file;
 pub use search_content::filter_lines;
 pub use write_file::write_file;
+
+use crate::types::{command_request, command_response};
+
+pub fn handler(request: &command_request::Request) -> Option<command_response::Response> {
+    match &request.command as &str {
+        _ => None,
+    }
+}
