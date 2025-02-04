@@ -1,3 +1,5 @@
+use crate::types::{command_request, command_response};
+
 pub mod copy_item;
 pub mod create_directory;
 pub mod decrypt;
@@ -28,10 +30,9 @@ pub use remove_file::remove_file;
 pub use search_content::filter_lines;
 pub use write_file::write_file;
 
-use crate::types::{command_request, command_response};
-
 pub fn handler(request: &command_request::Request) -> Option<command_response::Response> {
     match &request.command as &str {
-        _ => None,
+        "initialize" => initialize::interface(&request.parameters),
+        _ => None
     }
 }

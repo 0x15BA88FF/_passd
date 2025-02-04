@@ -1,9 +1,6 @@
 use passd::commands;
 use passd::types::{command_request, command_response};
-use warp::{
-    body::BodyDeserializeError,
-    Filter, Rejection, Reply
-};
+use warp::{body::BodyDeserializeError, Filter, Rejection, Reply};
 
 pub fn route() -> impl Filter<Extract = impl Reply, Error = Rejection> + Clone {
     warp::post()
@@ -31,7 +28,7 @@ async fn handle_request(request: command_request::Request) -> Result<impl Reply,
                     message: format!("Command '{}' is not recognized", request.command),
                 }),
             }),
-            warp::http::StatusCode::BAD_REQUEST
+            warp::http::StatusCode::BAD_REQUEST,
         ))
     }
 }
@@ -46,11 +43,11 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Rejection> {
                 message: "Method Not Allowed".to_string(),
                 error: Some(command_response::Error {
                     r#type: Some(command_response::ErrorType::InvalidRequest),
-                    message: "The request method is not allowed".to_string()
-                })
+                    message: "The request method is not allowed".to_string(),
+                }),
             }),
-            warp::http::StatusCode::METHOD_NOT_ALLOWED
-        ))
+            warp::http::StatusCode::METHOD_NOT_ALLOWED,
+        ));
     }
 
     if let Some(_) = err.find::<BodyDeserializeError>() {
@@ -62,11 +59,11 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Rejection> {
                 message: "Failed to deserialize body".to_string(),
                 error: Some(command_response::Error {
                     r#type: Some(command_response::ErrorType::InvalidRequest),
-                    message: "The request body is invalid".to_string()
-                })
+                    message: "The request body is invalid".to_string(),
+                }),
             }),
-            warp::http::StatusCode::BAD_REQUEST
-        ))
+            warp::http::StatusCode::BAD_REQUEST,
+        ));
     }
 
     Ok(warp::reply::with_status(
@@ -77,9 +74,9 @@ async fn handle_rejection(err: Rejection) -> Result<impl Reply, Rejection> {
             message: "Internal Server Error".to_string(),
             error: Some(command_response::Error {
                 r#type: Some(command_response::ErrorType::InvalidRequest),
-                message: "Something went wrong, try again later".to_string()
-            })
+                message: "Something went wrong, try again later".to_string(),
+            }),
         }),
-        warp::http::StatusCode::INTERNAL_SERVER_ERROR
+        warp::http::StatusCode::INTERNAL_SERVER_ERROR,
     ))
 }
