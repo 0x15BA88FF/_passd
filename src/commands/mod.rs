@@ -33,6 +33,6 @@ pub use write_file::write_file;
 pub fn handler(request: &command_request::Request) -> Option<command_response::Response> {
     match &request.command as &str {
         "initialize" => initialize::interface(&request.parameters),
-        _ => None
+        _ => None,
     }
 }

@@ -1,4 +1,4 @@
-use crate::{utils, types::command_response};
+use crate::{types::command_response, utils};
 use serde_json::Value;
 use std::{fs, io, path::Path};
 use warp;
@@ -59,7 +59,7 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                     message: "Failed to resolve store path".to_string(),
                     error: Some(command_response::Error {
                         r#type: Some(command_response::ErrorType::InvalidRequest),
-                        message: format!("Error resolving store path: {}", error).to_string()
+                        message: format!("Error resolving store path: {}", error).to_string(),
                     }),
                 })
             }
@@ -72,7 +72,7 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                     status: warp::http::StatusCode::OK.into(),
                     success: true,
                     message: "Store was successfully initialized".to_string(),
-                    error: None
+                    error: None,
                 })
             }
             Err(error) => {
@@ -83,8 +83,9 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                     message: "Internal server error".to_string(),
                     error: Some(command_response::Error {
                         r#type: Some(command_response::ErrorType::InvalidRequest),
-                        message: format!("Failed to initialize store, try again later: {}", error).to_string()
-                    })
+                        message: format!("Failed to initialize store, try again later: {}", error)
+                            .to_string(),
+                    }),
                 })
             }
         }
@@ -97,7 +98,7 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
         message: "Missing parameters".to_string(),
         error: Some(command_response::Error {
             r#type: Some(command_response::ErrorType::InvalidRequest),
-            message: "Required parameters are missing".to_string()
-        })
+            message: "Required parameters are missing".to_string(),
+        }),
     })
 }
