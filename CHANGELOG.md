@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `remove_directory` command api interface.
 - Add `create_directory` command api interface.
 - Add `Initialize` command api interface.
 - Create a simple http server to handler commands.

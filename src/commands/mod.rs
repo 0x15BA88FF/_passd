@@ -34,6 +34,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
     match &request.command as &str {
         "initialize" => initialize::interface(&request.parameters),
         "mkdir" => create_directory::interface(&request.parameters),
+        "rmdir" => remove_directory::interface(&request.parameters),
         _ => None,
     }
 }
