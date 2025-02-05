@@ -25,14 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `create_directory` command api interface.
 - Add `Initialize` command api interface.
 - Create a simple http server to handler commands.
-- Add passd `decrypt_string` util.
-- Add passd `encrypt_string` util.
+- Add passd `decrypt_string` command.
+- Add passd `encrypt_string` command.
+- Add passd `search_content` command.
+- Add passd `read_file` command.
 - Add passd `list_items` command.
 - Add passd `find_items` command.
 - Add passd `generate_password` command.
 - Add passd `move_item` command.
-- Add `force` overwrite parameter to `copy` command.
-- Add passd `copy` command.
+- Add `force` overwrite parameter to `copy_item` command.
+- Add passd `copy_item` command.
 - Add passd `remove_file` command.
 - Add passd `write_file` command.
 - Add passd `remove_directory` command.
