@@ -78,13 +78,12 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
             Err(error) => {
                 return Some(command_response::Response {
                     data: None,
-                    status: warp::http::StatusCode::BAD_REQUEST.into(),
+                    status: warp::http::StatusCode::INTERNAL_SERVER_ERROR.into(),
                     success: false,
-                    message: "Internal server error".to_string(),
+                    message: "Failed to initialize store".to_string(),
                     error: Some(command_response::Error {
                         r#type: Some(command_response::ErrorType::InvalidRequest),
-                        message: format!("Failed to initialize store, try again later: {}", error)
-                            .to_string(),
+                        message: format!("Error initializing password store: {}", error).to_string(),
                     }),
                 })
             }
