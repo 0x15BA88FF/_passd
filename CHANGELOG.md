@@ -34,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add passd `copy` command.
 - Add passd `remove_file` command.
 - Add passd `remove_directory` command.
-- Add passd `remove_directory` command.
 - Add passd `create_directory` command.
 - Add passd `init` command.
 - Create CHANGELOG.md file.
