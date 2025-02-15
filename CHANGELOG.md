@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `copy_item` command api interface.
 - Add `remove_file` command api interface.
 - Add `read_file` command api interface.
 - Add `write_file` command api interface.

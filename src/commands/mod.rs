@@ -38,6 +38,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
         "read" => read_file::interface(&request.parameters),
         "write" => write_file::interface(&request.parameters),
         "remove" => remove_file::interface(&request.parameters),
+        "copy" => copy_item::interface(&request.parameters),
         _ => None,
     }
 }
