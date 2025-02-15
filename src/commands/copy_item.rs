@@ -3,7 +3,6 @@ use serde_json::Value;
 use std::{fs, io, path::{Path, PathBuf}};
 use warp;
 
-
 pub fn copy_item(
     source: &Path,
     destination: &Path,
@@ -101,7 +100,7 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                                 .to_string(),
                             error: Some(command_response::Error {
                                 r#type: Some(command_response::ErrorType::InvalidRequest),
-                                message: format!("Error removing file: {}", error).to_string(),
+                            message: format!("Error copying file: {}", error).to_string(),
                             }),
                         })
                     }
