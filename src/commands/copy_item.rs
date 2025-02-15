@@ -86,7 +86,7 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                             data: None,
                             status: warp::http::StatusCode::OK.into(),
                             success: true,
-                            message: format!("{} was successfully copied", source_str)
+                            message: format!("{} was successfully copied to {}", source_str, destination_str)
                                 .to_string(),
                             error: None,
                         })
