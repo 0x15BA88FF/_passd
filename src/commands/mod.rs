@@ -39,6 +39,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
         "write" => write_file::interface(&request.parameters),
         "remove" => remove_file::interface(&request.parameters),
         "copy" => copy_item::interface(&request.parameters),
+        "move" => move_item::interface(&request.parameters),
         _ => None,
     }
 }
