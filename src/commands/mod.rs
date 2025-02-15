@@ -37,6 +37,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
         "rmdir" => remove_directory::interface(&request.parameters),
         "read" => read_file::interface(&request.parameters),
         "write" => write_file::interface(&request.parameters),
+        "remove" => remove_file::interface(&request.parameters),
         _ => None,
     }
 }
