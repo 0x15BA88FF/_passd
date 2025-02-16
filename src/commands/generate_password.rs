@@ -110,36 +110,48 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
         .as_ref()
         .and_then(|p| p.get("filters"))
         .and_then(|f| f.as_array())
-        .map(|arr| arr.iter().filter_map(|e| {
-            match e.as_str() {
-                Some("alphabets") => Some(Filter::Alphabets),
-                Some("capital") => Some(Filter::Capital),
-                Some("numbers") => Some(Filter::Numbers),
-                Some("symbols") => Some(Filter::Symbols),
-                Some("custom") => Some(Filter::Custom),
-                _ => None,
-            }
-        }).collect())
-        .unwrap_or_else(|| vec![
-            Filter::Alphabets,
-            Filter::Capital,
-            Filter::Numbers,
-            Filter::Symbols,
-            Filter::Custom,
-        ]);
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|e| match e.as_str() {
+                    Some("alphabets") => Some(Filter::Alphabets),
+                    Some("capital") => Some(Filter::Capital),
+                    Some("numbers") => Some(Filter::Numbers),
+                    Some("symbols") => Some(Filter::Symbols),
+                    Some("custom") => Some(Filter::Custom),
+                    _ => None,
+                })
+                .collect()
+        })
+        .unwrap_or_else(|| {
+            vec![
+                Filter::Alphabets,
+                Filter::Capital,
+                Filter::Numbers,
+                Filter::Symbols,
+                Filter::Custom,
+            ]
+        });
 
     let custom = parameters
         .as_ref()
         .and_then(|p| p.get("custom"))
         .and_then(|c| c.as_array())
-        .map(|arr| arr.iter().filter_map(|e| e.as_str().map(|s| s.to_string())).collect())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|e| e.as_str().map(|s| s.to_string()))
+                .collect()
+        })
         .unwrap_or_default();
 
     let separators = parameters
         .as_ref()
         .and_then(|p| p.get("separators"))
         .and_then(|s| s.as_array())
-        .map(|arr| arr.iter().filter_map(|e| e.as_str().map(|s| s.to_string())).collect::<Vec<String>>())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|e| e.as_str().map(|s| s.to_string()))
+                .collect::<Vec<String>>()
+        })
         .unwrap_or_default();
 
     match generate_password(Some(length), Some(filters), Some(custom), Some(separators)) {

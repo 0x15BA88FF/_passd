@@ -29,7 +29,10 @@ pub fn remove_directory(path: &Path, force: Option<bool>) -> Result<(), io::Erro
 
 pub fn interface(parameters: &Option<Value>) -> Option<command_response::Response> {
     if let Some(params) = parameters {
-        let force = params.get("force").and_then(|v| v.as_bool()).unwrap_or(false);
+        let force = params
+            .get("force")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         if let Some(path_str) = params.get("path").and_then(Value::as_str) {
             let path = Path::new(path_str);

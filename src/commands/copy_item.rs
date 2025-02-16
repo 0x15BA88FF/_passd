@@ -1,6 +1,9 @@
 use crate::types::command_response;
 use serde_json::Value;
-use std::{fs, io, path::{Path, PathBuf}};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 use warp;
 
 pub fn copy_item(
@@ -72,8 +75,14 @@ pub fn copy_item(
 
 pub fn interface(parameters: &Option<Value>) -> Option<command_response::Response> {
     if let Some(params) = parameters {
-        let force = params.get("force").and_then(|v| v.as_bool()).unwrap_or(false);
-        let recursive = params.get("recursive").and_then(|v| v.as_bool()).unwrap_or(false);
+        let force = params
+            .get("force")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        let recursive = params
+            .get("recursive")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         if let Some(source_str) = params.get("source").and_then(Value::as_str) {
             if let Some(destination_str) = params.get("destination").and_then(Value::as_str) {
@@ -86,8 +95,11 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                             data: None,
                             status: warp::http::StatusCode::OK.into(),
                             success: true,
-                            message: format!("{} was successfully copied to {}", source_str, destination_str)
-                                .to_string(),
+                            message: format!(
+                                "{} was successfully copied to {}",
+                                source_str, destination_str
+                            )
+                            .to_string(),
                             error: None,
                         })
                     }
@@ -96,11 +108,14 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                             data: None,
                             status: warp::http::StatusCode::INTERNAL_SERVER_ERROR.into(),
                             success: false,
-                            message: format!("Failed to copy {} to {}", source_str, destination_str)
-                                .to_string(),
+                            message: format!(
+                                "Failed to copy {} to {}",
+                                source_str, destination_str
+                            )
+                            .to_string(),
                             error: Some(command_response::Error {
                                 r#type: Some(command_response::ErrorType::InvalidRequest),
-                            message: format!("Error copying file: {}", error).to_string(),
+                                message: format!("Error copying file: {}", error).to_string(),
                             }),
                         })
                     }

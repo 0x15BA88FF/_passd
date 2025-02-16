@@ -83,7 +83,8 @@ pub fn interface(parameters: &Option<Value>) -> Option<command_response::Respons
                     message: "Failed to initialize store".to_string(),
                     error: Some(command_response::Error {
                         r#type: Some(command_response::ErrorType::InvalidRequest),
-                        message: format!("Error initializing password store: {}", error).to_string(),
+                        message: format!("Error initializing password store: {}", error)
+                            .to_string(),
                     }),
                 })
             }
