@@ -14,7 +14,7 @@ pub fn generate_password(
     length: Option<usize>,
     filter: Option<Vec<Filter>>,
     custom: Option<Vec<String>>,
-    separators: Option<Vec<&str>>,
+    separators: Option<Vec<String>>,
 ) -> Result<String, io::Error> {
     let length = length.unwrap_or(25);
     let filters = filter.unwrap_or_else(|| {

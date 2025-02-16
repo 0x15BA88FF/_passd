@@ -36,7 +36,7 @@ fn test_generate_password_separators() {
         None,
         Some(vec![Filter::Alphabets]),
         None,
-        Some(vec!["-", "_"]),
+        Some(vec!["-".to_string(), "_".to_string()]),
     )
     .unwrap();
 
