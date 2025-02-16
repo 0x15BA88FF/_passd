@@ -40,6 +40,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
         "remove" => remove_file::interface(&request.parameters),
         "copy" => copy_item::interface(&request.parameters),
         "move" => move_item::interface(&request.parameters),
+        "generate_password" => generate_password::interface(&request.parameters),
         _ => None,
     }
 }
