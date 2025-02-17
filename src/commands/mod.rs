@@ -41,6 +41,7 @@ pub fn handler(request: &command_request::Request) -> Option<command_response::R
         "copy" => copy_item::interface(&request.parameters),
         "move" => move_item::interface(&request.parameters),
         "generate_password" => generate_password::interface(&request.parameters),
+        "list" => list_items::interface(&request.parameters),
         _ => None,
     }
 }
