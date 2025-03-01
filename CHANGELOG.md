@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add `match_filter` utility with regex method.
 - Add `list_items` command api interface.
 - Add `generate_password` command api interface.
 - Add `move_item` command api interface.
