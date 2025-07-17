@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BaseMetadata {
@@ -28,4 +29,38 @@ pub struct Metadata {
 
     pub checksum_main: String,
     pub checksum_meta: String,
+}
+
+impl Default for BaseMetadata {
+    fn default() -> Self {
+        Self {
+            r#type: "general".to_string(),
+            category: "uncategorized".to_string(),
+            tags: Vec::new(),
+            description: String::new(),
+
+            attachments: Vec::new(),
+
+            extra: None,
+        }
+    }
+}
+
+impl Default for Metadata {
+    fn default() -> Self {
+        let now = Utc::now().to_rfc3339();
+
+        Self {
+            template: BaseMetadata::default(),
+
+            modifications: 0,
+            fingerprint: String::new(),
+
+            created_at: now.clone(),
+            updated_at: now,
+
+            checksum_main: String::new(),
+            checksum_meta: String::new(),
+        }
+    }
 }
