@@ -27,7 +27,7 @@ custom path, supporting:
 
 ```toml
 # Absolute path to the vault directory
-dir = "${XDG_DATA_HOME}/share/passd/"
+vault_dir = "${XDG_DATA_HOME}/share/passd/"
 
 # Absolute path where logs are stored
 logs_dir = "${XDG_STATE_HOME}/passd.log"
