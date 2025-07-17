@@ -40,10 +40,10 @@ port = 8080
 
 # Enable HTTPS/TLS support
 enable_tls = true
-```
 
-> **PGP Keys**: Paths to the private and public key are set via a `.env` file.
-> If no public key is present in `.env`, it can be passed per request.
+public_key_path = "/home/user/.keys/passd.pub"
+private_key_path = "/home/user/.keys/passd.sec"
+```
 
 ---
 
