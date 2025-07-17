@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 config = "0.15.13"
 directories = "6.0.0"
-dotenvy = "0.15.7"
 serde = { version = "1.0.219", features = ["derive"] }
