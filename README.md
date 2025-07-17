@@ -32,7 +32,7 @@ dir = "${XDG_DATA_HOME}/share/passd/"
 # Absolute path where logs are stored
 logs_dir = "${XDG_STATE_HOME}/passd.log"
 
-# Relative path inside the vault for metadata
+# Absolute path where metadata is stored
 metadata_dir = "metadata/"
 
 # Local port to run the JSON-RPC server
