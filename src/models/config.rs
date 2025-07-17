@@ -3,6 +3,9 @@ use crate::model::metadata::BaseMetadata;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    pub public_key_path: String,
+    pub private_key_path: String,
+
     pub dir: String,
     pub logs_dir: String,
     pub metadata_dir: String,
