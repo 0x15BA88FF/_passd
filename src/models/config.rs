@@ -3,12 +3,12 @@ use crate::model::metadata::BaseMetadata;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub dir: String,
-    pub logs_dir: String,
-    pub metadata_dir: String,
+    pub vault_dir: PathBuf,
+    pub logs_dir: PathBuf,
+    pub metadata_dir: PathBuf,
 
-    pub public_key_path: String,
-    pub private_key_path: String,
+    pub public_key_path: PathBuf,
+    pub private_key_path: PathBuf,
 
     pub port: u16,
     pub enable_tls: bool,
