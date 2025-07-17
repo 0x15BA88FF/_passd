@@ -1,6 +1,8 @@
+use dirs;
 use serde::Deserialize;
 use std::path::PathBuf;
-use crate::model::metadata::BaseMetadata;
+
+use crate::models::metadata::BaseMetadata;
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
