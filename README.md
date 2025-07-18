@@ -41,8 +41,8 @@ port = 8080
 # Enable HTTPS/TLS support
 enable_tls = true
 
-public_key_path = "/home/user/.keys/passd.pub"
-private_key_path = "/home/user/.keys/passd.sec"
+public_key_path = "~/.keys/passd.pub"
+private_key_path = "~/.keys/passd.sec"
 ```
 
 ---
