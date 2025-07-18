@@ -15,7 +15,7 @@ pub fn resolve_config_path() -> Option<PathBuf> {
     ].into_iter().flatten().find(|path| path.exists())
 }
 
-pub fn load_config_simple() -> Result<Config, Box<dyn std::error::Error>> {
+pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
     let Some(config_path) = resolve_config_path() else {
         return Ok(Config::default());
     };

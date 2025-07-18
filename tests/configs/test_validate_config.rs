@@ -15,7 +15,7 @@ fn partial_config_uses_defaults() {
 
     unsafe { env::set_var("PASSD_CONFIG_DIR", temp.path().join("env")); }
 
-    let config = load_config_simple().unwrap();
+    let config = load_config().unwrap();
     let default = Config::default();
 
     assert_eq!(config.port, 8111);
@@ -37,7 +37,7 @@ fn invalid_config_returns_error() {
 
     unsafe { env::set_var("PASSD_CONFIG_DIR", temp.path().join("env")); }
 
-    let config = load_config_simple().unwrap();
+    let config = load_config().unwrap();
     let default = Config::default();
 
     assert_eq!(config.port, 8111);
