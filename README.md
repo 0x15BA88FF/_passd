@@ -27,13 +27,13 @@ custom path, supporting:
 
 ```toml
 # Absolute path to the vault directory
-vault_dir = "~/.local/share/passd/"
+vault_dir = "~/.local/share/passd/vault/"
 
 # Absolute path where logs are stored
 logs_dir = "~/.local/state/passd.log"
 
 # Absolute path where metadata is stored
-metadata_dir = "metadata/"
+metadata_dir = "~/.local/share/passd/vault/metadata/"
 
 # Local port to run the JSON-RPC server
 port = 8080
