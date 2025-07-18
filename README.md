@@ -27,10 +27,10 @@ custom path, supporting:
 
 ```toml
 # Absolute path to the vault directory
-vault_dir = "${XDG_DATA_HOME}/share/passd/"
+vault_dir = "~/.local/share/passd/"
 
 # Absolute path where logs are stored
-logs_dir = "${XDG_STATE_HOME}/passd.log"
+logs_dir = "~/.local/state/passd.log"
 
 # Absolute path where metadata is stored
 metadata_dir = "metadata/"
