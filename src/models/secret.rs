@@ -1,5 +1,6 @@
-use crate::configs::load_config;
-use std::path::{Path, PathBuf};
+use crate::{configs::load_config, models::metadata::{BaseMetadata, Metadata}};
+use std::{error::Error, fs, path::{Path, PathBuf}};
+use toml;
 
 #[derive(Debug, Clone)]
 pub struct Secret {
@@ -25,5 +26,33 @@ impl Secret {
 
         config.metadata_path.join(&self.relative_path)
             .with_extension("meta.toml")
+    }
+
+    pub fn create(
+        &self,
+        content: &str,
+        metadata: &BaseMetadata,
+        public_key: &str,
+    ) -> Result<&Self, Box<dyn Error>> {
+        if self.secret_path().exists() || self.metadata_path().exists() {
+            return Err("Secret or metadata file already exists".into());
+        }
+
+        if let Some(parent) = self.secret_path().parent() {
+            fs::create_dir_all(parent)?;
+        }
+        if let Some(parent) = self.metadata_path().parent() {
+            fs::create_dir_all(parent)?;
+        }
+
+        fs::write(&self.secret_path(), content)?;
+        fs::write(&self.metadata_path(), toml::to_string_pretty(Metadata {
+            fingerprint: "".to_string(),
+            checksum_main: "".to_string(),
+            checksum_meta: "".to_string(),
+            ..metadata.clone()
+        })?)?;
+
+        Ok(self)
     }
 }
