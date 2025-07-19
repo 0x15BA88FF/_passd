@@ -55,4 +55,38 @@ impl Secret {
 
         Ok(self)
     }
+
+    pub fn update(
+        &self,
+        content: Option<&str>,
+        metadata: Option<&BaseMetadata>,
+        public_key: Option<&str>,
+    ) -> Result<&Self, Box<dyn Error>> {
+        if !self.secret_path().exists() || !self.metadata_path().exists() {
+            return Err("Secret or metadata file does not exists".into());
+        }
+
+        match (content, public_key) {
+            (Some(content), Some(public_key)) => {
+                fs::write(&self.secret_path(), content)?;
+            }
+            (Some(_), _) => {
+                return Err("Public key required to update secret".into());
+            }
+            _ => {}
+        }
+
+        if let Some(metadata) = metadata {
+            fs::write(&self.metadata_path(), toml::to_string_pretty(Metadata {
+                modifications: metadata.modifications.saturating_add(1),
+                fingerprint: "".to_string(),
+                updated_at: Some(Utc::now()),
+                checksum_main: "".to_string(),
+                checksum_meta: "".to_string(),
+                ..metadata.clone()
+            })?)?;
+        }
+
+        Ok(self)
+    }
 }
