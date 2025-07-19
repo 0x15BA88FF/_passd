@@ -146,14 +146,20 @@ impl Secret {
             ..metadata.clone()
         };
 
-        secure_write(&self.metadata_path(), toml::to_string_pretty(&temp_meta)?)?;
+        secure_write(
+            &self.metadata_path(),
+            toml::to_string_pretty(&temp_meta)?,
+        )?;
 
         let final_meta = Metadata {
             checksum_meta: compute_checksum(&self.metadata_path())?,
             ..temp_meta
         };
 
-        secure_write(&self.metadata_path(), toml::to_string_pretty(&final_meta)?)?;
+        secure_write(
+            &self.metadata_path(),
+            toml::to_string_pretty(&final_meta)?,
+        )?;
 
         Ok(self)
     }
