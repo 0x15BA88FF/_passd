@@ -1,6 +1,6 @@
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use chrono::Utc;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BaseMetadata {
