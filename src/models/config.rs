@@ -6,8 +6,10 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub vault_dir: PathBuf,
-    pub logs_dir: PathBuf,
     pub metadata_dir: PathBuf,
+
+    pub log_file: PathBuf,
+    pub log_level: String,
 
     pub public_key_path: PathBuf,
     pub private_key_path: PathBuf,
@@ -26,14 +28,16 @@ impl Default for Config {
             .unwrap_or_else(|| PathBuf::from(".passd"));
 
         let vault_dir = base.join("vault");
-        let logs_dir = base.join("logs");
         let keys_dir = base.join(".keys");
+        let log_file = base.join("logs/passd.log");
         let metadata_dir = vault_dir.join(".metadata");
 
         Self {
             vault_dir: vault_dir,
-            logs_dir: logs_dir,
             metadata_dir: metadata_dir,
+
+            log_file: logs_file,
+            log_level: "info".to_string(),
 
             public_key_path: keys_dir.join("public.pem"),
             private_key_path: keys_dir.join("private.pem"),
