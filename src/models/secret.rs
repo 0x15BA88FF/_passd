@@ -3,11 +3,14 @@ use crate::{
     models::metadata::{BaseMetadata, Metadata},
 };
 use openpgp::{
-    Cert,
-    crypto::Password,
-    parse::Parse,
-    parse::stream::{DecryptorBuilder, MessageStructure},
+    Cert, Result as PgpResult,
+    crypto::{Password, SessionKey},
+    parse::{
+        Parse,
+        stream::{DecryptorBuilder, MessageStructure},
+    },
     policy::StandardPolicy,
+    serialize::stream::{Encryptor, Message},
 };
 use std::{
     error::Error,
@@ -101,11 +104,38 @@ impl Secret {
             fs::create_dir_all(parent)?;
         }
 
-        fs::write(&self.secret_path(), content)?;
+        let policy = &StandardPolicy::new();
+        let cert = Cert::from_bytes(public_key.as_bytes())?;
+        let fingerprint = cert.fingerprint().to_hex().to_uppercase();
+        let recipients: Vec<_> = cert
+            .keys()
+            .with_policy(policy, None)
+            .alive()
+            .revoked(false)
+            .for_transport_encryption()
+            .collect();
+
+        if recipients.is_empty() {
+            return Err("No suitable encryption key found in public key".into());
+        }
+
+        let mut encrypted = Vec::new();
+        let message = Message::new(&mut encrypted);
+        let mut encryptor = Encryptor::for_recipients(
+            message,
+            recipients.iter().map(|r| r.key()),
+        )?
+        .build()?;
+
+        encryptor.write_all(content.as_bytes())?;
+        encryptor.finalize()?;
+
+        fs::write(&self.secret_path(), encrypted)?;
+
         fs::write(
             &self.metadata_path(),
             toml::to_string_pretty(Metadata {
-                fingerprint: "".to_string(),
+                fingerprint: fingerprint,
                 checksum_main: "".to_string(),
                 checksum_meta: "".to_string(),
                 ..metadata.clone()
