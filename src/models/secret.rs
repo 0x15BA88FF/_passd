@@ -1,6 +1,7 @@
 use crate::{
     configs::load_config,
     models::metadata::{BaseMetadata, Metadata},
+    utils::checksum::compute_checksum,
 };
 use openpgp::{
     Cert, Result as PgpResult,
@@ -106,7 +107,6 @@ impl Secret {
 
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(public_key.as_bytes())?;
-        let fingerprint = cert.fingerprint().to_hex().to_uppercase();
         let recipients: Vec<_> = cert
             .keys()
             .with_policy(policy, None)
@@ -132,15 +132,23 @@ impl Secret {
 
         fs::write(&self.secret_path(), encrypted)?;
 
-        fs::write(
-            &self.metadata_path(),
-            toml::to_string_pretty(Metadata {
-                fingerprint: fingerprint,
-                checksum_main: "".to_string(),
-                checksum_meta: "".to_string(),
-                ..metadata.clone()
-            })?,
-        )?;
+        let checksum_main = compute_checksum(&self.secret_path())?;
+
+        let temp_meta = Metadata {
+            fingerprint: cert.fingerprint().to_hex().to_uppercase(),
+            checksum_main: checksum_main.clone(),
+            checksum_meta: "".to_string(),
+            ..metadata.clone()
+        };
+
+        fs::write(&self.metadata_path(), toml::to_string_pretty(&temp_meta)?)?;
+
+        let final_meta = Metadata {
+            checksum_meta: compute_checksum(&self.metadata_path())?,
+            ..temp_meta
+        };
+
+        fs::write(&self.metadata_path(), toml::to_string_pretty(&final_meta)?)?;
 
         Ok(self)
     }
