@@ -2,6 +2,7 @@ use crate::{
     configs::load_config,
     models::metadata::{BaseMetadata, Metadata},
     utils::checksum::compute_checksum,
+    utils::fs::{secure_create_dir_all, secure_write},
 };
 use chrono::Utc;
 use openpgp::{
@@ -16,7 +17,7 @@ use openpgp::{
 };
 use std::{
     error::Error,
-    fs,
+    fs::{read, read_to_string, remove_file},
     path::{Path, PathBuf},
 };
 use toml;
@@ -57,7 +58,7 @@ impl Secret {
         let config = load_config()?;
         let private_key = private_key.unwrap_or(&config.private_key);
 
-        let ciphertext = fs::read(&self.secret_path())?;
+        let ciphertext = read(&self.secret_path())?;
         let policy = &StandardPolicy::new();
 
         let (cert, _) = Cert::from_bytes(private_key.as_bytes())?;
@@ -85,7 +86,7 @@ impl Secret {
     }
 
     pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
-        let text = fs::read_to_string(&self.metadata_path())?;
+        let text = read_to_string(&self.metadata_path())?;
         let metadata: Metadata = toml::from_str(&text)?;
         Ok(metadata)
     }
@@ -101,10 +102,10 @@ impl Secret {
         }
 
         if let Some(parent) = self.secret_path().parent() {
-            fs::create_dir_all(parent)?;
+            secure_create_dir_all(parent)?;
         }
         if let Some(parent) = self.metadata_path().parent() {
-            fs::create_dir_all(parent)?;
+            secure_create_dir_all(parent)?;
         }
 
         let config = load_config()?;
@@ -135,7 +136,7 @@ impl Secret {
         encryptor.write_all(content.as_bytes())?;
         encryptor.finalize()?;
 
-        fs::write(&self.secret_path(), encrypted)?;
+        secure_write(&self.secret_path(), encrypted)?;
         let checksum_main = compute_checksum(&self.secret_path())?;
 
         let temp_meta = Metadata {
@@ -145,14 +146,14 @@ impl Secret {
             ..metadata.clone()
         };
 
-        fs::write(&self.metadata_path(), toml::to_string_pretty(&temp_meta)?)?;
+        secure_write(&self.metadata_path(), toml::to_string_pretty(&temp_meta)?)?;
 
         let final_meta = Metadata {
             checksum_meta: compute_checksum(&self.metadata_path())?,
             ..temp_meta
         };
 
-        fs::write(&self.metadata_path(), toml::to_string_pretty(&final_meta)?)?;
+        secure_write(&self.metadata_path(), toml::to_string_pretty(&final_meta)?)?;
 
         Ok(self)
     }
@@ -177,7 +178,7 @@ impl Secret {
                 ..base.clone()
             }
         } else {
-            toml::from_str(&fs::read_to_string(&self.metadata_path())?)?
+            toml::from_str(&read_to_string(&self.metadata_path())?)?
         };
 
         if let Some(content) = content {
@@ -208,7 +209,7 @@ impl Secret {
             encryptor.write_all(content.as_bytes())?;
             encryptor.finalize()?;
 
-            fs::write(&self.secret_path(), encrypted)?;
+            secure_write(&self.secret_path(), encrypted)?;
 
             updated_metadata.fingerprint =
                 cert.fingerprint().to_hex().to_uppercase();
@@ -217,13 +218,16 @@ impl Secret {
         }
 
         updated_metadata.checksum_meta = "".to_string();
-        fs::write(
+
+        secure_write(
             &self.metadata_path(),
             toml::to_string_pretty(&updated_metadata)?,
         )?;
+
         updated_metadata.checksum_meta =
             compute_checksum(&self.metadata_path())?;
-        fs::write(
+
+        secure_write(
             &self.metadata_path(),
             toml::to_string_pretty(&updated_metadata)?,
         )?;
@@ -233,7 +237,7 @@ impl Secret {
 
     pub fn remove(&self) -> Result<(), Box<dyn Error>> {
         for path in [&self.secret_path(), &self.metadata_path()] {
-            match fs::remove_file(path) {
+            match remove_file(path) {
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
                 Err(e) => return Err(Box::new(e)),
