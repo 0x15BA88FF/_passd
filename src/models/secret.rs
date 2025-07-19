@@ -19,4 +19,11 @@ impl Secret {
         config.vault_dir.join(&self.relative_path)
             .with_extension("pgp")
     }
+
+    pub fn metadata_path(&self) -> PathBuf {
+        let config = load_config()?;
+
+        config.metadata_path.join(&self.relative_path)
+            .with_extension("meta.toml")
+    }
 }
