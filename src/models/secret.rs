@@ -3,8 +3,9 @@ use crate::{
     models::metadata::{BaseMetadata, Metadata},
     utils::checksum::compute_checksum,
 };
+use chrono::Utc;
 use openpgp::{
-    Cert, Result as PgpResult,
+    Cert,
     crypto::{Password, SessionKey},
     parse::{
         Parse,
@@ -33,8 +34,7 @@ impl Secret {
     }
 
     pub fn secret_path(&self) -> PathBuf {
-        let config = load_config()?;
-
+        let config = load_config().expect("Failed to load config");
         config
             .vault_dir
             .join(&self.relative_path)
@@ -42,8 +42,7 @@ impl Secret {
     }
 
     pub fn metadata_path(&self) -> PathBuf {
-        let config = load_config()?;
-
+        let config = load_config().expect("Failed to load config");
         config
             .metadata_path
             .join(&self.relative_path)
@@ -52,11 +51,15 @@ impl Secret {
 
     pub fn content(
         &self,
-        private_key: &str,
+        private_key: Option<&str>,
         password: &str,
     ) -> Result<String, Box<dyn Error>> {
+        let config = load_config()?;
+        let private_key = private_key.unwrap_or(&config.private_key);
+
         let ciphertext = fs::read(&self.secret_path())?;
         let policy = &StandardPolicy::new();
+
         let (cert, _) = Cert::from_bytes(private_key.as_bytes())?;
         let keypair = cert
             .keys()
@@ -71,11 +74,11 @@ impl Secret {
             .clone()
             .unlock(|| Password::from(password.to_string()))?
             .into_keypair()?;
+
         let mut decryptor =
             DecryptorBuilder::from_bytes(&ciphertext)?.build(|| Ok(keypair))?;
 
         let mut plaintext = Vec::new();
-
         std::io::copy(&mut decryptor, &mut plaintext)?;
 
         Ok(String::from_utf8(plaintext)?)
@@ -84,7 +87,6 @@ impl Secret {
     pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
         let text = fs::read_to_string(&self.metadata_path())?;
         let metadata: Metadata = toml::from_str(&text)?;
-
         Ok(metadata)
     }
 
@@ -92,7 +94,7 @@ impl Secret {
         &self,
         content: &str,
         metadata: &BaseMetadata,
-        public_key: &str,
+        public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
         if self.secret_path().exists() || self.metadata_path().exists() {
             return Err("Secret or metadata file already exists".into());
@@ -104,6 +106,9 @@ impl Secret {
         if let Some(parent) = self.metadata_path().parent() {
             fs::create_dir_all(parent)?;
         }
+
+        let config = load_config()?;
+        let public_key = public_key.unwrap_or(&config.public_key);
 
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(public_key.as_bytes())?;
@@ -131,12 +136,11 @@ impl Secret {
         encryptor.finalize()?;
 
         fs::write(&self.secret_path(), encrypted)?;
-
         let checksum_main = compute_checksum(&self.secret_path())?;
 
         let temp_meta = Metadata {
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
-            checksum_main: checksum_main.clone(),
+            checksum_main,
             checksum_meta: "".to_string(),
             ..metadata.clone()
         };
@@ -157,11 +161,14 @@ impl Secret {
         &self,
         content: Option<&str>,
         metadata: Option<&BaseMetadata>,
-        public_key: &str,
+        public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
         if !self.secret_path().exists() || !self.metadata_path().exists() {
             return Err("Secret or metadata file does not exist".into());
         }
+
+        let config = load_config()?;
+        let public_key = public_key.unwrap_or(&config.public_key);
 
         let mut updated_metadata = if let Some(base) = metadata {
             Metadata {
@@ -210,15 +217,12 @@ impl Secret {
         }
 
         updated_metadata.checksum_meta = "".to_string();
-
         fs::write(
             &self.metadata_path(),
             toml::to_string_pretty(&updated_metadata)?,
         )?;
-
         updated_metadata.checksum_meta =
             compute_checksum(&self.metadata_path())?;
-
         fs::write(
             &self.metadata_path(),
             toml::to_string_pretty(&updated_metadata)?,
