@@ -101,4 +101,10 @@ impl Secret {
 
         Ok(())
     }
+
+    pub fn content(&self) -> Result<String, Box<dyn Error>> {
+        let content = fs::read_to_string(&self.secret_path())?;
+
+        Ok(content)
+    }
 }
