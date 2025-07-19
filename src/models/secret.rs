@@ -107,4 +107,11 @@ impl Secret {
 
         Ok(content)
     }
+
+    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
+        let text = fs::read_to_string(&self.metadata_path())?;
+        let metadata: Metadata = toml::from_str(&text)?;
+
+        Ok(metadata)
+    }
 }
