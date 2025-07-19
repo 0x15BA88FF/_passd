@@ -11,7 +11,8 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
         .as_deref()
         .unwrap_or("info")
         .to_lowercase()
-        .as_str() {
+        .as_str()
+    {
         "debug" => LevelFilter::Debug,
         "error" => LevelFilter::Error,
         "warn"  => LevelFilter::Warn,
