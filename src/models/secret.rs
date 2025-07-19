@@ -2,6 +2,13 @@ use crate::{
     configs::load_config,
     models::metadata::{BaseMetadata, Metadata},
 };
+use openpgp::{
+    Cert,
+    crypto::Password,
+    parse::Parse,
+    parse::stream::{DecryptorBuilder, MessageStructure},
+    policy::StandardPolicy,
+};
 use std::{
     error::Error,
     fs,
@@ -39,10 +46,35 @@ impl Secret {
             .with_extension("meta.toml")
     }
 
-    pub fn content(&self, private_key: &str) -> Result<String, Box<dyn Error>> {
-        let content = fs::read_to_string(&self.secret_path())?;
+    pub fn content(
+        &self,
+        private_key: &str,
+        password: &str,
+    ) -> Result<String, Box<dyn Error>> {
+        let ciphertext = fs::read(&self.secret_path())?;
+        let policy = &StandardPolicy::new();
+        let (cert, _) = Cert::from_bytes(private_key.as_bytes())?;
+        let keypair = cert
+            .keys()
+            .secret()
+            .with_policy(policy, None)
+            .alive()
+            .revoked(false)
+            .for_transport_decryption()
+            .nth(0)
+            .ok_or("No suitable decryption key found")?
+            .key()
+            .clone()
+            .unlock(|| Password::from(password.to_string()))?
+            .into_keypair()?;
+        let mut decryptor =
+            DecryptorBuilder::from_bytes(&ciphertext)?.build(|| Ok(keypair))?;
 
-        Ok(content)
+        let mut plaintext = Vec::new();
+
+        std::io::copy(&mut decryptor, &mut plaintext)?;
+
+        Ok(String::from_utf8(plaintext)?)
     }
 
     pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
