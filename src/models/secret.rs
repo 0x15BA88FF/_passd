@@ -89,4 +89,16 @@ impl Secret {
 
         Ok(self)
     }
+
+    pub fn remove(&self) -> Result<(), Box<dyn Error>> {
+        for path in [&self.secret_path(), &self.metadata_path()] {
+            match fs::remove_file(path) {
+                Ok(_) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(Box::new(e)),
+            }
+        }
+
+        Ok(())
+    }
 }
