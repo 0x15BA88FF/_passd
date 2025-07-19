@@ -157,35 +157,72 @@ impl Secret {
         &self,
         content: Option<&str>,
         metadata: Option<&BaseMetadata>,
-        public_key: Option<&str>,
+        public_key: &str,
     ) -> Result<&Self, Box<dyn Error>> {
         if !self.secret_path().exists() || !self.metadata_path().exists() {
-            return Err("Secret or metadata file does not exists".into());
+            return Err("Secret or metadata file does not exist".into());
         }
 
-        match (content, public_key) {
-            (Some(content), Some(public_key)) => {
-                fs::write(&self.secret_path(), content)?;
+        let mut updated_metadata = if let Some(base) = metadata {
+            Metadata {
+                modifications: base.modifications.saturating_add(1),
+                updated_at: Some(Utc::now()),
+                ..base.clone()
             }
-            (Some(_), _) => {
-                return Err("Public key required to update secret".into());
+        } else {
+            toml::from_str(&fs::read_to_string(&self.metadata_path())?)?
+        };
+
+        if let Some(content) = content {
+            let policy = &StandardPolicy::new();
+            let cert = Cert::from_bytes(public_key.as_bytes())?;
+            let recipients: Vec<_> = cert
+                .keys()
+                .with_policy(policy, None)
+                .alive()
+                .revoked(false)
+                .for_transport_encryption()
+                .collect();
+
+            if recipients.is_empty() {
+                return Err(
+                    "No suitable encryption key found in public key".into()
+                );
             }
-            _ => {}
+
+            let mut encrypted = Vec::new();
+            let message = Message::new(&mut encrypted);
+            let mut encryptor = Encryptor::for_recipients(
+                message,
+                recipients.iter().map(|r| r.key()),
+            )?
+            .build()?;
+
+            encryptor.write_all(content.as_bytes())?;
+            encryptor.finalize()?;
+
+            fs::write(&self.secret_path(), encrypted)?;
+
+            updated_metadata.fingerprint =
+                cert.fingerprint().to_hex().to_uppercase();
+            updated_metadata.checksum_main =
+                compute_checksum(&self.secret_path())?;
         }
 
-        if let Some(metadata) = metadata {
-            fs::write(
-                &self.metadata_path(),
-                toml::to_string_pretty(Metadata {
-                    modifications: metadata.modifications.saturating_add(1),
-                    fingerprint: "".to_string(),
-                    updated_at: Some(Utc::now()),
-                    checksum_main: "".to_string(),
-                    checksum_meta: "".to_string(),
-                    ..metadata.clone()
-                })?,
-            )?;
-        }
+        updated_metadata.checksum_meta = "".to_string();
+
+        fs::write(
+            &self.metadata_path(),
+            toml::to_string_pretty(&updated_metadata)?,
+        )?;
+
+        updated_metadata.checksum_meta =
+            compute_checksum(&self.metadata_path())?;
+
+        fs::write(
+            &self.metadata_path(),
+            toml::to_string_pretty(&updated_metadata)?,
+        )?;
 
         Ok(self)
     }
