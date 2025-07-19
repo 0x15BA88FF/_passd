@@ -102,7 +102,10 @@ impl Secret {
         Ok(())
     }
 
-    pub fn content(&self) -> Result<String, Box<dyn Error>> {
+    pub fn content(
+        &self,
+        private_key: &str
+    ) -> Result<String, Box<dyn Error>> {
         let content = fs::read_to_string(&self.secret_path())?;
 
         Ok(content)
