@@ -1,5 +1,12 @@
-use crate::{configs::load_config, models::metadata::{BaseMetadata, Metadata}};
-use std::{error::Error, fs, path::{Path, PathBuf}};
+use crate::{
+    configs::load_config,
+    models::metadata::{BaseMetadata, Metadata},
+};
+use std::{
+    error::Error,
+    fs,
+    path::{Path, PathBuf},
+};
 use toml;
 
 #[derive(Debug, Clone)]
@@ -8,24 +15,41 @@ pub struct Secret {
 }
 
 impl Secret {
-    pub fn new(
-        relative_path: impl Into<PathBuf>
-    ) -> Self {
-        Self { relative_path: relative_path.into() }
+    pub fn new(relative_path: impl Into<PathBuf>) -> Self {
+        Self {
+            relative_path: relative_path.into(),
+        }
     }
 
     pub fn secret_path(&self) -> PathBuf {
         let config = load_config()?;
 
-        config.vault_dir.join(&self.relative_path)
+        config
+            .vault_dir
+            .join(&self.relative_path)
             .with_extension("pgp")
     }
 
     pub fn metadata_path(&self) -> PathBuf {
         let config = load_config()?;
 
-        config.metadata_path.join(&self.relative_path)
+        config
+            .metadata_path
+            .join(&self.relative_path)
             .with_extension("meta.toml")
+    }
+
+    pub fn content(&self, private_key: &str) -> Result<String, Box<dyn Error>> {
+        let content = fs::read_to_string(&self.secret_path())?;
+
+        Ok(content)
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
+        let text = fs::read_to_string(&self.metadata_path())?;
+        let metadata: Metadata = toml::from_str(&text)?;
+
+        Ok(metadata)
     }
 
     pub fn create(
@@ -46,12 +70,15 @@ impl Secret {
         }
 
         fs::write(&self.secret_path(), content)?;
-        fs::write(&self.metadata_path(), toml::to_string_pretty(Metadata {
-            fingerprint: "".to_string(),
-            checksum_main: "".to_string(),
-            checksum_meta: "".to_string(),
-            ..metadata.clone()
-        })?)?;
+        fs::write(
+            &self.metadata_path(),
+            toml::to_string_pretty(Metadata {
+                fingerprint: "".to_string(),
+                checksum_main: "".to_string(),
+                checksum_meta: "".to_string(),
+                ..metadata.clone()
+            })?,
+        )?;
 
         Ok(self)
     }
@@ -77,14 +104,17 @@ impl Secret {
         }
 
         if let Some(metadata) = metadata {
-            fs::write(&self.metadata_path(), toml::to_string_pretty(Metadata {
-                modifications: metadata.modifications.saturating_add(1),
-                fingerprint: "".to_string(),
-                updated_at: Some(Utc::now()),
-                checksum_main: "".to_string(),
-                checksum_meta: "".to_string(),
-                ..metadata.clone()
-            })?)?;
+            fs::write(
+                &self.metadata_path(),
+                toml::to_string_pretty(Metadata {
+                    modifications: metadata.modifications.saturating_add(1),
+                    fingerprint: "".to_string(),
+                    updated_at: Some(Utc::now()),
+                    checksum_main: "".to_string(),
+                    checksum_meta: "".to_string(),
+                    ..metadata.clone()
+                })?,
+            )?;
         }
 
         Ok(self)
@@ -100,21 +130,5 @@ impl Secret {
         }
 
         Ok(())
-    }
-
-    pub fn content(
-        &self,
-        private_key: &str
-    ) -> Result<String, Box<dyn Error>> {
-        let content = fs::read_to_string(&self.secret_path())?;
-
-        Ok(content)
-    }
-
-    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
-        let text = fs::read_to_string(&self.metadata_path())?;
-        let metadata: Metadata = toml::from_str(&text)?;
-
-        Ok(metadata)
     }
 }
