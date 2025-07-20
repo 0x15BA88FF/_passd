@@ -26,7 +26,6 @@ impl Default for Config {
         let base = dirs::home_dir()
             .map(|home| home.join(".passd"))
             .unwrap_or_else(|| PathBuf::from(".passd"));
-
         let vault_dir = base.join("vault");
         let keys_dir = base.join(".keys");
         let log_file = base.join("logs/passd.log");

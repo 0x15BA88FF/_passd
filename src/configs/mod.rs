@@ -22,6 +22,7 @@ pub fn resolve_config_path() -> Option<PathBuf> {
 pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
     let Some(config_path) = resolve_config_path() else {
         warn!("No config file resolved, using default configuration");
+
         return Ok(Config::default());
     };
 

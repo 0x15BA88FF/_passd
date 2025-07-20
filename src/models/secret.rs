@@ -86,6 +86,7 @@ impl Secret {
 
     pub fn secret_path(&self) -> PathBuf {
         let config = load_config().expect("Failed to load config");
+
         config
             .vault_dir
             .join(&self.relative_path)
@@ -94,6 +95,7 @@ impl Secret {
 
     pub fn metadata_path(&self) -> PathBuf {
         let config = load_config().expect("Failed to load config");
+
         config
             .metadata_dir
             .join(&self.relative_path)
@@ -110,9 +112,7 @@ impl Secret {
         let config = load_config()?;
         let secret_path = self.secret_path();
         let ciphertext = read(&secret_path)?;
-
         let policy = &StandardPolicy::new();
-
         let cert = Cert::from_bytes(
             match private_key {
                 Some(key) => key.to_string(),
@@ -120,7 +120,6 @@ impl Secret {
             }
             .as_bytes(),
         )?;
-
         let keypair = cert
             .keys()
             .secret()
@@ -135,19 +134,20 @@ impl Secret {
             .parts_into_secret()?
             .decrypt_secret(&Password::from(password.to_string()))?
             .into_keypair()?;
-
         let helper = DecryptHelper::new(keypair);
         let mut decryptor = DecryptorBuilder::from_bytes(&ciphertext)?
             .with_policy(policy, None, helper)?;
-
         let mut plaintext = Vec::new();
+
         std::io::copy(&mut decryptor, &mut plaintext)?;
 
         let result = String::from_utf8(plaintext)?;
+
         info!(
             "Successfully decrypted secret: {}",
             self.relative_path.display()
         );
+
         Ok(result)
     }
 
@@ -155,6 +155,7 @@ impl Secret {
         let metadata_path = self.metadata_path();
         let text = read_to_string(&metadata_path)?;
         let metadata: Metadata = toml::from_str(&text)?;
+
         Ok(metadata)
     }
 
@@ -183,7 +184,6 @@ impl Secret {
 
         let config = load_config()?;
         let policy = &StandardPolicy::new();
-
         let cert = Cert::from_bytes(
             match public_key {
                 Some(key) => key.to_string(),
@@ -191,7 +191,6 @@ impl Secret {
             }
             .as_bytes(),
         )?;
-
         let recipients: Vec<Recipient> = cert
             .keys()
             .with_policy(policy, None)
@@ -216,7 +215,6 @@ impl Secret {
         secure_write(&secret_path, encrypted)?;
 
         let checksum_main = compute_checksum(&secret_path)?;
-
         let temp_meta = Metadata {
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
@@ -234,6 +232,7 @@ impl Secret {
         secure_write(&metadata_path, toml::to_string_pretty(&final_meta)?)?;
 
         info!("Created secret: {}", self.relative_path.display());
+
         Ok(self)
     }
 
@@ -253,18 +252,17 @@ impl Secret {
         }
 
         let config = load_config()?;
-
         let mut updated_metadata: Metadata =
             toml::from_str(&read_to_string(&metadata_path)?)?;
 
         if let Some(base) = metadata {
             let base_as_metadata: Metadata = base.clone().into();
+
             updated_metadata = updated_metadata.merge(&base_as_metadata)?;
         }
 
         if let Some(content) = content {
             let policy = &StandardPolicy::new();
-
             let cert = Cert::from_bytes(
                 match public_key {
                     Some(key) => key.to_string(),
@@ -272,7 +270,6 @@ impl Secret {
                 }
                 .as_bytes(),
             )?;
-
             let recipients: Vec<Recipient> = cert
                 .keys()
                 .with_policy(policy, None)
@@ -325,6 +322,7 @@ impl Secret {
             self.relative_path.display(),
             updated_metadata.modifications
         );
+
         Ok(self)
     }
 

@@ -11,6 +11,7 @@ pub fn secure_create_dir_all(path: &Path) -> std::io::Result<()> {
 
     for part in path.components() {
         current.push(part);
+
         if current.is_dir() {
             fs::set_permissions(&current, Permissions::from_mode(0o700))?;
         }

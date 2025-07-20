@@ -64,6 +64,7 @@ impl Default for Metadata {
 impl From<BaseMetadata> for Metadata {
     fn from(base_metadata: BaseMetadata) -> Self {
         let mut default = Self::default();
+
         default.template = base_metadata;
         default
     }
@@ -80,6 +81,7 @@ impl Metadata {
         merge_toml(&mut self_value, &other_value);
 
         let merged: Metadata = toml::from_str(&self_value.to_string())?;
+
         Ok(merged)
     }
 }
@@ -101,6 +103,7 @@ fn merge_toml(base: &mut TomlValue, other: &TomlValue) {
         }
         (base_val, other_val) => {
             let new_value = other_val.clone();
+
             *base_val = new_value;
         }
     }
