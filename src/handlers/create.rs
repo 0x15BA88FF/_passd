@@ -18,7 +18,7 @@ pub fn handler(
     _ext: &Extensions,
 ) -> Result<String, ErrorObject<'static>> {
     let create_params: CreateParams = params.parse().map_err(|e| {
-        error!("Failed to parse create parameters: {}", e);
+        error!("Failed to parse parameters: {}", e);
 
         ErrorObject::owned(
             jsonrpsee::types::error::INVALID_PARAMS_CODE,
@@ -28,24 +28,23 @@ pub fn handler(
     })?;
 
     match (Secret {
-        relative_path: create_params.path.into(),
-    })
-    .create(
+        relative_path: create_params.path.clone().into(),
+    }).create(
         &create_params.content,
         &create_params.metadata,
         create_params.public_key.as_deref(),
     ) {
         Ok(_) => {
-            info!("Create operation successful");
+            info!("Successfully created secret {}", create_params.path);
 
-            Ok("Item created successfully".to_string())
+            Ok(format!("Successfully created secret {}", create_params.path))
         }
         Err(e) => {
-            error!("Create operation failed: {}", e);
+            error!("Failed to create secret {}: {}", create_params.path, e);
 
             Err(ErrorObject::owned(
                 jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-                "Create operation failed",
+                format!("Failed to create secret {}", create_params.path),
                 Some(e.to_string()),
             ))
         }
