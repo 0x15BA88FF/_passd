@@ -5,22 +5,72 @@ use crate::{
     utils::fs::{secure_create_dir_all, secure_write},
 };
 use chrono::Utc;
-use openpgp::{
-    Cert,
-    crypto::{Password, SessionKey},
+use log::{error, info};
+use sequoia_openpgp::{
+    Cert, KeyHandle, Result as SequoiaResult,
+    crypto::{KeyPair, Password, SessionKey, SymmetricAlgorithm},
+    packet::{PKESK, SKESK},
     parse::{
         Parse,
-        stream::{DecryptorBuilder, MessageStructure},
+        stream::{
+            DecryptionHelper, DecryptorBuilder, MessageStructure,
+            VerificationHelper,
+        },
     },
     policy::StandardPolicy,
-    serialize::stream::{Encryptor, Message},
+    serialize::stream::{Encryptor, Message, Recipient},
 };
+use std::io::Write;
 use std::{
     error::Error,
     fs::{read, read_to_string, remove_file},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 use toml;
+
+struct DecryptHelper {
+    keypair: KeyPair,
+}
+
+impl DecryptHelper {
+    fn new(keypair: KeyPair) -> Self {
+        Self { keypair }
+    }
+}
+
+impl VerificationHelper for DecryptHelper {
+    fn get_certs(&mut self, _ids: &[KeyHandle]) -> SequoiaResult<Vec<Cert>> {
+        Ok(Vec::new())
+    }
+
+    fn check(&mut self, _structure: MessageStructure) -> SequoiaResult<()> {
+        Ok(())
+    }
+}
+
+impl DecryptionHelper for DecryptHelper {
+    fn decrypt(
+        &mut self,
+        pkesks: &[PKESK],
+        _skesks: &[SKESK],
+        _sym_algo: Option<SymmetricAlgorithm>,
+        decrypt: &mut dyn FnMut(
+            Option<SymmetricAlgorithm>,
+            &SessionKey,
+        ) -> bool,
+    ) -> SequoiaResult<Option<Cert>> {
+        for pkesk in pkesks.iter() {
+            if let Some((sym_algo, session_key)) =
+                pkesk.decrypt(&mut self.keypair, None)
+            {
+                if decrypt(sym_algo, &session_key) {
+                    return Ok(None);
+                }
+            }
+        }
+        Ok(None)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Secret {
@@ -45,7 +95,7 @@ impl Secret {
     pub fn metadata_path(&self) -> PathBuf {
         let config = load_config().expect("Failed to load config");
         config
-            .metadata_path
+            .metadata_dir
             .join(&self.relative_path)
             .with_extension("meta.toml")
     }
@@ -55,38 +105,55 @@ impl Secret {
         private_key: Option<&str>,
         password: &str,
     ) -> Result<String, Box<dyn Error>> {
-        let config = load_config()?;
-        let private_key = private_key.unwrap_or(&config.private_key);
+        info!("Decrypting secret: {}", self.relative_path.display());
 
-        let ciphertext = read(&self.secret_path())?;
+        let config = load_config()?;
+        let secret_path = self.secret_path();
+        let ciphertext = read(&secret_path)?;
+
         let policy = &StandardPolicy::new();
 
-        let (cert, _) = Cert::from_bytes(private_key.as_bytes())?;
+        let cert = Cert::from_bytes(
+            match private_key {
+                Some(key) => key.to_string(),
+                None => std::fs::read_to_string(&config.private_key_path)?,
+            }
+            .as_bytes(),
+        )?;
+
         let keypair = cert
             .keys()
             .secret()
             .with_policy(policy, None)
             .alive()
             .revoked(false)
-            .for_transport_decryption()
+            .for_storage_encryption()
             .nth(0)
             .ok_or("No suitable decryption key found")?
             .key()
             .clone()
-            .unlock(|| Password::from(password.to_string()))?
+            .parts_into_secret()?
+            .decrypt_secret(&Password::from(password.to_string()))?
             .into_keypair()?;
 
-        let mut decryptor =
-            DecryptorBuilder::from_bytes(&ciphertext)?.build(|| Ok(keypair))?;
+        let helper = DecryptHelper::new(keypair);
+        let mut decryptor = DecryptorBuilder::from_bytes(&ciphertext)?
+            .with_policy(policy, None, helper)?;
 
         let mut plaintext = Vec::new();
         std::io::copy(&mut decryptor, &mut plaintext)?;
 
-        Ok(String::from_utf8(plaintext)?)
+        let result = String::from_utf8(plaintext)?;
+        info!(
+            "Successfully decrypted secret: {}",
+            self.relative_path.display()
+        );
+        Ok(result)
     }
 
     pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
-        let text = read_to_string(&self.metadata_path())?;
+        let metadata_path = self.metadata_path();
+        let text = read_to_string(&metadata_path)?;
         let metadata: Metadata = toml::from_str(&text)?;
         Ok(metadata)
     }
@@ -97,28 +164,41 @@ impl Secret {
         metadata: &BaseMetadata,
         public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
-        if self.secret_path().exists() || self.metadata_path().exists() {
+        info!("Creating secret: {}", self.relative_path.display());
+
+        let secret_path = self.secret_path();
+        let metadata_path = self.metadata_path();
+
+        if secret_path.exists() || metadata_path.exists() {
             return Err("Secret or metadata file already exists".into());
         }
 
-        if let Some(parent) = self.secret_path().parent() {
+        if let Some(parent) = secret_path.parent() {
             secure_create_dir_all(parent)?;
         }
-        if let Some(parent) = self.metadata_path().parent() {
+
+        if let Some(parent) = metadata_path.parent() {
             secure_create_dir_all(parent)?;
         }
 
         let config = load_config()?;
-        let public_key = public_key.unwrap_or(&config.public_key);
-
         let policy = &StandardPolicy::new();
-        let cert = Cert::from_bytes(public_key.as_bytes())?;
-        let recipients: Vec<_> = cert
+
+        let cert = Cert::from_bytes(
+            match public_key {
+                Some(key) => key.to_string(),
+                None => std::fs::read_to_string(&config.public_key_path)?,
+            }
+            .as_bytes(),
+        )?;
+
+        let recipients: Vec<Recipient> = cert
             .keys()
             .with_policy(policy, None)
             .alive()
             .revoked(false)
-            .for_transport_encryption()
+            .for_storage_encryption()
+            .map(|ka| ka.into())
             .collect();
 
         if recipients.is_empty() {
@@ -127,40 +207,33 @@ impl Secret {
 
         let mut encrypted = Vec::new();
         let message = Message::new(&mut encrypted);
-        let mut encryptor = Encryptor::for_recipients(
-            message,
-            recipients.iter().map(|r| r.key()),
-        )?
-        .build()?;
+        let mut encryptor =
+            Encryptor::for_recipients(message, recipients).build()?;
 
-        encryptor.write_all(content.as_bytes())?;
+        encryptor.write(content.as_bytes())?;
         encryptor.finalize()?;
 
-        secure_write(&self.secret_path(), encrypted)?;
-        let checksum_main = compute_checksum(&self.secret_path())?;
+        secure_write(&secret_path, encrypted)?;
+
+        let checksum_main = compute_checksum(&secret_path)?;
 
         let temp_meta = Metadata {
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
             checksum_meta: "".to_string(),
-            ..metadata.clone()
+            ..metadata.clone().into()
         };
 
-        secure_write(
-            &self.metadata_path(),
-            toml::to_string_pretty(&temp_meta)?,
-        )?;
+        secure_write(&metadata_path, toml::to_string_pretty(&temp_meta)?)?;
 
         let final_meta = Metadata {
-            checksum_meta: compute_checksum(&self.metadata_path())?,
+            checksum_meta: compute_checksum(&metadata_path)?,
             ..temp_meta
         };
 
-        secure_write(
-            &self.metadata_path(),
-            toml::to_string_pretty(&final_meta)?,
-        )?;
+        secure_write(&metadata_path, toml::to_string_pretty(&final_meta)?)?;
 
+        info!("Created secret: {}", self.relative_path.display());
         Ok(self)
     }
 
@@ -170,32 +243,43 @@ impl Secret {
         metadata: Option<&BaseMetadata>,
         public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
-        if !self.secret_path().exists() || !self.metadata_path().exists() {
+        info!("Updating secret: {}", self.relative_path.display());
+
+        let secret_path = self.secret_path();
+        let metadata_path = self.metadata_path();
+
+        if !secret_path.exists() || !metadata_path.exists() {
             return Err("Secret or metadata file does not exist".into());
         }
 
         let config = load_config()?;
-        let public_key = public_key.unwrap_or(&config.public_key);
 
-        let mut updated_metadata = if let Some(base) = metadata {
-            Metadata {
-                modifications: base.modifications.saturating_add(1),
-                updated_at: Some(Utc::now()),
-                ..base.clone()
-            }
-        } else {
-            toml::from_str(&read_to_string(&self.metadata_path())?)?
-        };
+        let mut updated_metadata: Metadata =
+            toml::from_str(&read_to_string(&metadata_path)?)?;
+
+        if let Some(base) = metadata {
+            let base_as_metadata: Metadata = base.clone().into();
+            updated_metadata = updated_metadata.merge(&base_as_metadata)?;
+        }
 
         if let Some(content) = content {
             let policy = &StandardPolicy::new();
-            let cert = Cert::from_bytes(public_key.as_bytes())?;
-            let recipients: Vec<_> = cert
+
+            let cert = Cert::from_bytes(
+                match public_key {
+                    Some(key) => key.to_string(),
+                    None => std::fs::read_to_string(&config.public_key_path)?,
+                }
+                .as_bytes(),
+            )?;
+
+            let recipients: Vec<Recipient> = cert
                 .keys()
                 .with_policy(policy, None)
                 .alive()
                 .revoked(false)
-                .for_transport_encryption()
+                .for_storage_encryption()
+                .map(|ka| ka.into())
                 .collect();
 
             if recipients.is_empty() {
@@ -206,49 +290,68 @@ impl Secret {
 
             let mut encrypted = Vec::new();
             let message = Message::new(&mut encrypted);
-            let mut encryptor = Encryptor::for_recipients(
-                message,
-                recipients.iter().map(|r| r.key()),
-            )?
-            .build()?;
+            let mut encryptor =
+                Encryptor::for_recipients(message, recipients).build()?;
 
-            encryptor.write_all(content.as_bytes())?;
+            encryptor.write(content.as_bytes())?;
             encryptor.finalize()?;
 
-            secure_write(&self.secret_path(), encrypted)?;
+            secure_write(&secret_path, encrypted)?;
 
             updated_metadata.fingerprint =
                 cert.fingerprint().to_hex().to_uppercase();
-            updated_metadata.checksum_main =
-                compute_checksum(&self.secret_path())?;
+            updated_metadata.checksum_main = compute_checksum(&secret_path)?;
         }
 
+        updated_metadata.modifications =
+            updated_metadata.modifications.saturating_add(1);
+        updated_metadata.updated_at = Utc::now().to_string();
         updated_metadata.checksum_meta = "".to_string();
 
         secure_write(
-            &self.metadata_path(),
+            &metadata_path,
             toml::to_string_pretty(&updated_metadata)?,
         )?;
 
-        updated_metadata.checksum_meta =
-            compute_checksum(&self.metadata_path())?;
+        updated_metadata.checksum_meta = compute_checksum(&metadata_path)?;
 
         secure_write(
-            &self.metadata_path(),
+            &metadata_path,
             toml::to_string_pretty(&updated_metadata)?,
         )?;
 
+        info!(
+            "Updated secret: {} (modifications: {})",
+            self.relative_path.display(),
+            updated_metadata.modifications
+        );
         Ok(self)
     }
 
     pub fn remove(&self) -> Result<(), Box<dyn Error>> {
-        for path in [&self.secret_path(), &self.metadata_path()] {
+        info!("Removing secret: {}", self.relative_path.display());
+
+        let paths = [self.secret_path(), self.metadata_path()];
+        let mut errors = Vec::new();
+
+        for path in &paths {
             match remove_file(path) {
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-                Err(e) => return Err(Box::new(e)),
+                Err(e) => errors.push(format!(
+                    "Failed to remove {}: {}",
+                    path.display(),
+                    e
+                )),
             }
         }
+
+        if !errors.is_empty() {
+            error!("Removal errors: {}", errors.join("; "));
+            return Err(errors.join("; ").into());
+        }
+
+        info!("Removed secret: {}", self.relative_path.display());
 
         Ok(())
     }

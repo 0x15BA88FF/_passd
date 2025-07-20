@@ -1,8 +1,8 @@
 use std::{
     fs::{self, Permissions},
-    os::unix::fs::PermissionsExt,
+    os::unix::fs::{OpenOptionsExt, PermissionsExt},
     path::{Path, PathBuf},
-}
+};
 
 pub fn secure_create_dir_all(path: &Path) -> std::io::Result<()> {
     fs::create_dir_all(path)?;
@@ -19,9 +19,9 @@ pub fn secure_create_dir_all(path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-pub fn secure_write_file(
+pub fn secure_write(
     path: &Path,
-    content: impl AsRef<[u8]>
+    content: impl AsRef<[u8]>,
 ) -> std::io::Result<()> {
     use std::fs::OpenOptions;
     use std::io::Write;

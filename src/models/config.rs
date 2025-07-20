@@ -36,7 +36,7 @@ impl Default for Config {
             vault_dir: vault_dir,
             metadata_dir: metadata_dir,
 
-            log_file: logs_file,
+            log_file: log_file,
             log_level: "info".to_string(),
 
             public_key_path: keys_dir.join("public.pem"),

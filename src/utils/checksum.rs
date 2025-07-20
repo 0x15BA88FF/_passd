@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use std::fs;
+use std::{error::Error, fs, path::Path};
 
 pub fn compute_checksum(path: &Path) -> Result<String, Box<dyn Error>> {
     let data = fs::read(path)?;

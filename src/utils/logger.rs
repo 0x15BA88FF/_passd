@@ -1,26 +1,20 @@
 use chrono::Local;
-use crate::configs::load_config;
 use fern::Dispatch;
 use log::LevelFilter;
-use std::{fs::OpenOptions, path::Path};
+use std::{fs::OpenOptions, path::PathBuf};
 
-pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
-    let config = load_config()?;
-
-    let log_level = match config.log_level
-        .as_deref()
-        .unwrap_or("info")
-        .to_lowercase()
-        .as_str()
-    {
+pub fn init_logger(
+    log_file: &PathBuf,
+    log_level: &String,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let log_level = match log_level.to_lowercase().as_str() {
         "debug" => LevelFilter::Debug,
         "error" => LevelFilter::Error,
-        "warn"  => LevelFilter::Warn,
+        "warn" => LevelFilter::Warn,
         "trace" => LevelFilter::Trace,
-        "info"  => LevelFilter::Info,
+        "info" => LevelFilter::Info,
         _ => LevelFilter::Info,
     };
-
     let mut base_config = Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -32,17 +26,13 @@ pub fn init_logger() -> Result<(), Box<dyn std::error::Error>> {
         })
         .level(log_level)
         .chain(std::io::stdout());
+    let log_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(log_file)?;
 
-    if let Some(log_file_path) = config.log_file {
-        let log_file = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .append(true)
-            .open(&log_file_path)?;
-
-        base_config = base_config.chain(log_file);
-    }
-
+    base_config = base_config.chain(log_file);
     base_config.apply()?;
 
     Ok(())
