@@ -23,7 +23,7 @@ use sequoia_openpgp::{
 use std::io::Write;
 use std::{
     error::Error,
-    fs::{read, read_to_string, remove_file},
+    fs::{read, read_to_string, remove_file, rename},
     path::PathBuf,
 };
 use toml;
@@ -350,5 +350,31 @@ impl Secret {
         info!("Removed secret: {}", self.relative_path.display());
 
         Ok(())
+    }
+
+    pub fn move_to(
+        &self,
+        destination: PathBuf,
+    ) -> Result<Secret, Box<dyn Error>> {
+        let destination_secret = Secret {
+            relative_path: destination,
+        };
+
+        let current_secret_path = self.secret_path()?;
+        let current_metadata_path = self.metadata_path()?;
+        let dest_secret_path = destination_secret.secret_path()?;
+        let dest_metadata_path = destination_secret.metadata_path()?;
+
+        if let Some(parent) = dest_secret_path.parent() {
+            secure_create_dir_all(parent)?;
+        }
+        if let Some(parent) = dest_metadata_path.parent() {
+            secure_create_dir_all(parent)?;
+        }
+
+        rename(&current_secret_path, &dest_secret_path)?;
+        rename(&current_metadata_path, &dest_metadata_path)?;
+
+        Ok(destination_secret)
     }
 }
