@@ -113,8 +113,6 @@ impl Secret {
         private_key: Option<&str>,
         password: &str,
     ) -> Result<String, Box<dyn Error>> {
-        info!("Decrypting secret: {}", self.relative_path.display());
-
         let config = load_config()?;
         let secret_path = self.secret_path();
         let ciphertext = read(&secret_path)?;
@@ -171,8 +169,6 @@ impl Secret {
         metadata: &BaseMetadata,
         public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
-        info!("Creating secret: {}", self.relative_path.display());
-
         let secret_path = self.secret_path();
         let metadata_path = self.metadata_path();
 
@@ -248,8 +244,6 @@ impl Secret {
         metadata: Option<&BaseMetadata>,
         public_key: Option<&str>,
     ) -> Result<&Self, Box<dyn Error>> {
-        info!("Updating secret: {}", self.relative_path.display());
-
         let secret_path = self.secret_path();
         let metadata_path = self.metadata_path();
 
@@ -333,8 +327,6 @@ impl Secret {
     }
 
     pub fn remove(&self) -> Result<(), Box<dyn Error>> {
-        info!("Removing secret: {}", self.relative_path.display());
-
         let paths = [self.secret_path(), self.metadata_path()];
         let mut errors = Vec::new();
 
