@@ -102,6 +102,12 @@ impl Secret {
             .with_extension("meta.toml")
     }
 
+    pub fn secret(&self) -> Result<Metadata, Box<dyn Error>> {
+        let secret_path = self.secret_path();
+
+        Ok(read_to_string(&secret_path)?)
+    }
+
     pub fn content(
         &self,
         private_key: Option<&str>,
