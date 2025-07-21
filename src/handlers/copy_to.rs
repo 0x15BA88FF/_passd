@@ -27,34 +27,31 @@ pub fn handler(
 
     match (Secret {
         relative_path: copy_params.from_path.clone().into(),
-    }).copy_to(copy_params.to_path.clone().into()) {
+    })
+    .copy_to(copy_params.to_path.clone().into())
+    {
         Ok(_) => {
             info!(
                 "Successfully copyd secret from {} to {}",
-                copy_params.from_path,
-                copy_params.to_path
+                copy_params.from_path, copy_params.to_path
             );
 
             Ok(format!(
                 "Successfully copyd secret from {} to {}",
-                copy_params.from_path,
-                copy_params.to_path
+                copy_params.from_path, copy_params.to_path
             ))
-        },
+        }
         Err(e) => {
             error!(
                 "Failed to copy secret from {} to {}: {}",
-                copy_params.from_path,
-                copy_params.to_path,
-                e
+                copy_params.from_path, copy_params.to_path, e
             );
 
             Err(ErrorObject::owned(
                 jsonrpsee::types::error::INTERNAL_ERROR_CODE,
                 format!(
                     "Failed to copy secret from {} to {}",
-                    copy_params.from_path,
-                    copy_params.to_path
+                    copy_params.from_path, copy_params.to_path
                 ),
                 Some(e.to_string()),
             ))
