@@ -29,7 +29,8 @@ pub fn handler(
 
     match (Secret {
         relative_path: create_params.path.clone().into(),
-    }).create(
+    })
+    .create(
         &create_params.content,
         &create_params.metadata,
         create_params.public_key.as_deref(),
@@ -37,7 +38,10 @@ pub fn handler(
         Ok(_) => {
             info!("Successfully created secret {}", create_params.path);
 
-            Ok(format!("Successfully created secret {}", create_params.path))
+            Ok(format!(
+                "Successfully created secret {}",
+                create_params.path
+            ))
         }
         Err(e) => {
             error!("Failed to create secret {}: {}", create_params.path, e);

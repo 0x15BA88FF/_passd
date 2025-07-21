@@ -26,11 +26,16 @@ pub fn handler(
 
     match (Secret {
         relative_path: delete_params.path.clone().into(),
-    }).remove() {
+    })
+    .remove()
+    {
         Ok(_) => {
             info!("Successfully deleted secret {}", delete_params.path);
 
-            Ok(format!("Successfully deleted secret {}", delete_params.path))
+            Ok(format!(
+                "Successfully deleted secret {}",
+                delete_params.path
+            ))
         }
         Err(e) => {
             error!("Failed to delete secret {}: {}", delete_params.path, e);

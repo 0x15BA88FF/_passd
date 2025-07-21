@@ -43,7 +43,10 @@ pub fn handler(
             metadata
         }
         Err(e) => {
-            error!("Failed to read secret metadata {}: {}", read_params.path, e);
+            error!(
+                "Failed to read secret metadata {}: {}",
+                read_params.path, e
+            );
 
             return Err(ErrorObject::owned(
                 jsonrpsee::types::error::INTERNAL_ERROR_CODE,
@@ -53,10 +56,9 @@ pub fn handler(
         }
     };
 
-    let content = match secret.content(
-        Some(&read_params.private_key),
-        &read_params.password
-    ) {
+    let content = match secret
+        .content(Some(&read_params.private_key), &read_params.password)
+    {
         Ok(content) => {
             info!("Successfully read secret content {}", read_params.path);
 

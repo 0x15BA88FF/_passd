@@ -29,7 +29,8 @@ pub fn handler(
 
     match (Secret {
         relative_path: update_params.path.clone().into(),
-    }).update(
+    })
+    .update(
         Some(&update_params.content),
         Some(&update_params.metadata),
         update_params.public_key.as_deref(),
@@ -37,7 +38,10 @@ pub fn handler(
         Ok(_) => {
             info!("Successfully updated secret {}", update_params.path);
 
-            Ok(format!("Successfully updated secret {}", update_params.path))
+            Ok(format!(
+                "Successfully updated secret {}",
+                update_params.path
+            ))
         }
         Err(e) => {
             error!("Failed to update secret {}: {}", update_params.path, e);
