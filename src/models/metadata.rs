@@ -61,12 +61,24 @@ impl Default for Metadata {
     }
 }
 
+impl From<Metadata> for BaseMetadata {
+    fn from(metadata: Metadata) -> Self {
+        metadata.template
+    }
+}
+
 impl From<BaseMetadata> for Metadata {
     fn from(base_metadata: BaseMetadata) -> Self {
         let mut default = Self::default();
 
         default.template = base_metadata;
         default
+    }
+}
+
+impl Metadata {
+    pub fn to_base(&self) -> BaseMetadata {
+        self.template.clone()
     }
 }
 
