@@ -102,10 +102,18 @@ impl Secret {
             .with_extension("meta.toml")
     }
 
-    pub fn secret(&self) -> Result<Metadata, Box<dyn Error>> {
+    pub fn plaintext_content(&self) -> Result<Metadata, Box<dyn Error>> {
         let secret_path = self.secret_path();
 
         Ok(read_to_string(&secret_path)?)
+    }
+
+    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
+        let metadata_path = self.metadata_path();
+        let text = read_to_string(&metadata_path)?;
+        let metadata: Metadata = toml::from_str(&text)?;
+
+        Ok(metadata)
     }
 
     pub fn content(
@@ -153,14 +161,6 @@ impl Secret {
         );
 
         Ok(result)
-    }
-
-    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
-        let metadata_path = self.metadata_path();
-        let text = read_to_string(&metadata_path)?;
-        let metadata: Metadata = toml::from_str(&text)?;
-
-        Ok(metadata)
     }
 
     pub fn create(
