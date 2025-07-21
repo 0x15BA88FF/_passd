@@ -4,6 +4,7 @@ use jsonrpsee::RpcModule;
 pub mod create;
 pub mod delete;
 pub mod move_to;
+pub mod copy_to;
 pub mod read;
 pub mod update;
 
@@ -13,6 +14,7 @@ pub fn register_handlers(module: &mut RpcModule<()>) -> Result<()> {
     module.register_method("delete", delete::handler)?;
     module.register_method("read", read::handler)?;
     module.register_method("move", move_to::handler)?;
+    module.register_method("copy", copy_to::handler)?;
 
     Ok(())
 }
