@@ -401,4 +401,26 @@ impl Secret {
 
         Ok(destination_secret)
     }
+
+    pub fn clone_to(
+        &self,
+        destination: PathBuf,
+        public_key: &str,
+        private_key: Option<&str>,
+        password: &str,
+    ) -> Result<Secret, Box<dyn Error>> {
+        let destination_secret = Secret {
+            relative_path: destination,
+        };
+        let decrypted_content = self.content(private_key, password)?;
+        let metadata = self.metadata()?;
+
+        destination_secret.create(
+            &decrypted_content,
+            &metadata.to_base(),
+            Some(public_key),
+        )?;
+
+        Ok(destination_secret)
+    }
 }
