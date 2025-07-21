@@ -102,7 +102,7 @@ impl Secret {
             .with_extension("meta.toml")
     }
 
-    pub fn plaintext_content(&self) -> Result<Metadata, Box<dyn Error>> {
+    pub fn plaintext_content(&self) -> Result<String, Box<dyn Error>> {
         let secret_path = self.secret_path();
 
         Ok(read_to_string(&secret_path)?)
@@ -360,10 +360,10 @@ impl Secret {
             relative_path: destination,
         };
 
-        let current_secret_path = self.secret_path()?;
-        let current_metadata_path = self.metadata_path()?;
-        let dest_secret_path = destination_secret.secret_path()?;
-        let dest_metadata_path = destination_secret.metadata_path()?;
+        let current_secret_path = self.secret_path();
+        let current_metadata_path = self.metadata_path();
+        let dest_secret_path = destination_secret.secret_path();
+        let dest_metadata_path = destination_secret.metadata_path();
 
         if let Some(parent) = dest_secret_path.parent() {
             secure_create_dir_all(parent)?;
