@@ -1,0 +1,60 @@
+use jsonrpsee::Extensions;
+use jsonrpsee::types::{ErrorObject, Params};
+use log::{error, info};
+use passd::models::secret::Secret;
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
+struct MoveParams {
+    from_path: String,
+    to_path: String,
+}
+
+pub fn handler(
+    params: Params,
+    _ctx: &(),
+    _ext: &Extensions,
+) -> Result<String, ErrorObject<'static>> {
+    let move_params: MoveParams = params.parse().map_err(|e| {
+        error!("Failed to parse parameters: {}", e);
+
+        ErrorObject::owned(
+            jsonrpsee::types::error::INVALID_PARAMS_CODE,
+            "Invalid parameters",
+            Some(format!("Failed to parse parameters: {}", e)),
+        )
+    })?;
+
+    match (Secret {
+        relative_path: move_params.from_path.clone().into(),
+    })
+    .move_to(move_params.to_path.clone().into())
+    {
+        Ok(_) => {
+            info!(
+                "Successfully moved secret from {} to {}",
+                move_params.from_path, move_params.to_path
+            );
+
+            Ok(format!(
+                "Successfully moved secret from {} to {}",
+                move_params.from_path, move_params.to_path
+            ))
+        }
+        Err(e) => {
+            error!(
+                "Failed to move secret from {} to {}: {}",
+                move_params.from_path, move_params.to_path, e
+            );
+
+            Err(ErrorObject::owned(
+                jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+                format!(
+                    "Failed to move secret from {} to {}",
+                    move_params.from_path, move_params.to_path
+                ),
+                Some(e.to_string()),
+            ))
+        }
+    }
+}
