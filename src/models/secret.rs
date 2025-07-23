@@ -437,7 +437,7 @@ impl Secret {
         &self,
         filter: Option<F>,
         mut sort: Option<C>,
-        skip: Option<usize>,
+        offset: Option<usize>,
         limit: Option<usize>,
     ) -> Result<Vec<VaultSecret>, Box<dyn Error>>
     where
