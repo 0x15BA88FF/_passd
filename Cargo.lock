@@ -1310,6 +1310,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml",
+ "walkdir",
 ]
 
 [[package]]
