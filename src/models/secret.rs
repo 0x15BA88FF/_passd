@@ -439,13 +439,13 @@ impl Secret {
         mut sort: Option<C>,
         offset: Option<usize>,
         limit: Option<usize>,
-    ) -> Result<Vec<VaultSecret>, Box<dyn Error>>
+    ) -> Result<Vec<Secret>, Box<dyn Error>>
     where
-        F: Fn(&Metadata) -> bool,
-        C: FnMut(&Metadata, &Metadata) -> Ordering,
+        F: Fn(&PathBuf, &Metadata) -> bool,
+        C: FnMut(&PathBuf, &Metadata) -> Ordering,
     {
         let mut results = Vec::new();
-        let config = load_config().expect("Failed to load config");
+        let config = load_config()?;
 
         for entry in WalkDir::new(&config.metadata_dir)
             .into_iter()
@@ -460,11 +460,11 @@ impl Secret {
             })
         {
             let full_path = entry.path();
-            let relative_path =
-                match full_path.strip_prefix(&config.metadata_dir) {
-                    Ok(r) => r,
-                    Err(_) => continue,
-                };
+            let relative_path = match full_path.strip_prefix(&config.metadata_dir) {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+
             let file_stem = match relative_path
                 .file_name()
                 .and_then(|f| f.to_str())
@@ -473,41 +473,42 @@ impl Secret {
                 Some(stem) => stem,
                 None => continue,
             };
-            let mut base = relative_path.to_path_buf();
 
+            let mut base = relative_path.to_path_buf();
             base.set_file_name(file_stem);
 
-            let content = match read_to_string(full_path) {
-                Ok(c) => c,
-                Err(_) => continue,
+            let secret = Secret {
+                relative_path: base.clone(),
             };
-            let metadata: Metadata = match toml::from_str(&content) {
+
+            let metadata = match secret.metadata() {
                 Ok(m) => m,
                 Err(_) => continue,
             };
 
             if let Some(ref filter_fn) = filter {
-                if !filter_fn(&metadata) {
+                if !filter_fn(&secret.relative_path, &metadata) {
                     continue;
                 }
             }
 
-            results.push((base, metadata));
+            results.push((secret, metadata));
         }
 
         if let Some(ref mut cmp_fn) = sort {
-            results.sort_by(|a, b| cmp_fn(&a.1, &b.1));
+            results.sort_by(|(a, a_meta), (b, b_meta)| {
+                cmp_fn(&a.relative_path, a_meta)
+                    .then_with(|| cmp_fn(&b.relative_path, b_meta))
+            });
         }
 
         let total = results.len();
-        let start = skip.unwrap_or(0).min(total);
+        let start = offset.unwrap_or(0).min(total);
         let end = limit.map_or(total, |l| (start + l).min(total));
-        let response: Vec<VaultSecret> = results[start..end]
+
+        let response = results[start..end]
             .iter()
-            .map(|(path, metadata)| VaultSecret {
-                path: path.to_string_lossy().to_string(),
-                metadata: metadata.clone(),
-            })
+            .map(|(secret, _)| secret.clone())
             .collect();
 
         Ok(response)
