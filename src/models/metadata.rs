@@ -1,10 +1,11 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 use toml::{self, Value as TomlValue};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BaseMetadata {
+    pub path: PathBuf,
     pub r#type: String,
     pub category: String,
     pub tags: Vec<String>,
