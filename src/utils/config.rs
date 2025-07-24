@@ -14,5 +14,5 @@ pub fn resolve_config_paths() -> Option<PathBuf> {
     config_paths
         .into_iter()
         .flatten()
-        .find(|path| path.exists());
+        .find(|path| path.exists())
 }
