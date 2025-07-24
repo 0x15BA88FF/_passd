@@ -11,5 +11,8 @@ pub fn resolve_config_paths() -> Option<PathBuf> {
         dirs::home_dir().map(|home| home.join(".passd/config.toml")),
     ];
 
-    config_paths.into_iter().flatten().find(|path| path.exists());
+    config_paths
+        .into_iter()
+        .flatten()
+        .find(|path| path.exists());
 }
