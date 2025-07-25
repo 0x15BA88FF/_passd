@@ -1,6 +1,8 @@
 use config::{Config as RawConfig, File};
-use crate::models::metadata::BaseMetadata;
-use directories::BaseDirs;
+use crate::{
+    utils::config::resolve_config_paths,
+    models::metadata::BaseMetadata
+};
 use dirs;
 use log::{error, info, warn};
 use serde::Deserialize;
@@ -53,7 +55,7 @@ impl Default for Config {
 
 impl Config {
     pub fn load_config() -> Result<Self, Box<dyn std::error::Error>> {
-        let config_path = match resolve_config_path() {
+        let config_path = match resolve_config_paths() {
             Some(path) => {
                 info!("Successfully resolved configuration {}", path.display());
                 path

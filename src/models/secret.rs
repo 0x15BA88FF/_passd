@@ -1,6 +1,8 @@
 use crate::{
-    configs::load_config,
-    models::metadata::{BaseMetadata, Metadata},
+    models::{
+        config::Config,
+        metadata::{BaseMetadata, Metadata},
+    },
     utils::checksum::compute_checksum,
     utils::fs::{secure_create_dir_all, secure_write},
 };
@@ -20,7 +22,6 @@ use sequoia_openpgp::{
     policy::StandardPolicy,
     serialize::stream::{Encryptor, Message, Recipient},
 };
-use serde::Serialize;
 use std::{
     cmp::Ordering,
     error::Error,
@@ -30,12 +31,6 @@ use std::{
 };
 use toml;
 use walkdir::WalkDir;
-
-#[derive(Debug, Serialize)]
-pub struct VaultSecret {
-    pub path: String,
-    pub metadata: Metadata,
-}
 
 struct DecryptHelper {
     keypair: KeyPair,
@@ -93,22 +88,17 @@ impl Secret {
         }
     }
 
-    pub fn secret_path(&self) -> PathBuf {
-        let config = load_config().expect("Failed to load config");
-
-        config
-            .vault_dir
-            .join(&self.relative_path)
-            .with_extension("pgp")
-    }
-
     pub fn metadata_path(&self) -> PathBuf {
-        let config = load_config().expect("Failed to load config");
+        let config = Config::load_config().expect("Failed to load config");
 
         config
             .metadata_dir
             .join(&self.relative_path)
             .with_extension("meta.toml")
+    }
+
+    pub fn secret_path(&self) -> PathBuf {
+        self.metadata().unwrap().template.path
     }
 
     pub fn plaintext_content(&self) -> Result<String, Box<dyn Error>> {
@@ -130,7 +120,7 @@ impl Secret {
         private_key: Option<&str>,
         password: &str,
     ) -> Result<String, Box<dyn Error>> {
-        let config = load_config()?;
+        let config = Config::load_config()?;
         let secret_path = self.secret_path();
         let ciphertext = read(&secret_path)?;
         let policy = &StandardPolicy::new();
@@ -193,7 +183,7 @@ impl Secret {
             secure_create_dir_all(parent)?;
         }
 
-        let config = load_config()?;
+        let config = Config::load_config()?;
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(
             match public_key {
@@ -226,21 +216,19 @@ impl Secret {
         secure_write(&secret_path, encrypted)?;
 
         let checksum_main = compute_checksum(&secret_path)?;
-        let temp_meta = Metadata {
+        let mut meta = Metadata {
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
             checksum_meta: "".to_string(),
             ..metadata.clone().into()
         };
 
-        secure_write(&metadata_path, toml::to_string_pretty(&temp_meta)?)?;
+        secure_write(&metadata_path, toml::to_string_pretty(&meta)?)?;
 
-        let final_meta = Metadata {
-            checksum_meta: compute_checksum(&metadata_path)?,
-            ..temp_meta
-        };
+        meta.template.path = secret_path;
+        meta.checksum_meta = compute_checksum(&metadata_path)?;
 
-        secure_write(&metadata_path, toml::to_string_pretty(&final_meta)?)?;
+        secure_write(&metadata_path, toml::to_string_pretty(&meta)?)?;
 
         info!("Created secret: {}", self.relative_path.display());
 
@@ -260,7 +248,7 @@ impl Secret {
             return Err("Secret or metadata file does not exist".into());
         }
 
-        let config = load_config()?;
+        let config = Config::load_config()?;
         let mut updated_metadata: Metadata =
             toml::from_str(&read_to_string(&metadata_path)?)?;
 
@@ -311,7 +299,7 @@ impl Secret {
 
         updated_metadata.modifications =
             updated_metadata.modifications.saturating_add(1);
-        updated_metadata.updated_at = Utc::now().to_string();
+        updated_metadata.updated_at = Utc::now();
         updated_metadata.checksum_meta = "".to_string();
 
         secure_write(
@@ -445,7 +433,7 @@ impl Secret {
         C: FnMut(&PathBuf, &Metadata) -> Ordering,
     {
         let mut results = Vec::new();
-        let config = load_config()?;
+        let config = Config::load_config()?;
 
         for entry in WalkDir::new(&config.metadata_dir)
             .into_iter()
@@ -460,10 +448,11 @@ impl Secret {
             })
         {
             let full_path = entry.path();
-            let relative_path = match full_path.strip_prefix(&config.metadata_dir) {
-                Ok(r) => r,
-                Err(_) => continue,
-            };
+            let relative_path =
+                match full_path.strip_prefix(&config.metadata_dir) {
+                    Ok(r) => r,
+                    Err(_) => continue,
+                };
 
             let file_stem = match relative_path
                 .file_name()
