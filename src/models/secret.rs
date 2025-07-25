@@ -6,6 +6,7 @@ use crate::{
     utils::checksum::compute_checksum,
     utils::fs::{secure_create_dir_all, secure_write},
 };
+use anyhow::{Context, Result};
 use chrono::Utc;
 use log::{error, info};
 use sequoia_openpgp::{
@@ -24,7 +25,6 @@ use sequoia_openpgp::{
 };
 use std::{
     cmp::Ordering,
-    error::Error,
     fs::{copy, read, read_to_string, remove_file, rename},
     io::Write,
     path::PathBuf,
@@ -72,6 +72,7 @@ impl DecryptionHelper for DecryptHelper {
                 }
             }
         }
+
         Ok(None)
     }
 }
@@ -88,29 +89,36 @@ impl Secret {
         }
     }
 
-    pub fn metadata_path(&self) -> PathBuf {
-        let config = Config::load_config().expect("Failed to load config");
+    pub fn metadata_path(&self) -> Result<PathBuf> {
+        let config = Config::load_config()
+            .context("Failed to load config for metadata path")?;
 
-        config
+        Ok(config
             .metadata_dir
             .join(&self.relative_path)
-            .with_extension("meta.toml")
+            .with_extension("meta.toml"))
     }
 
-    pub fn secret_path(&self) -> PathBuf {
-        self.metadata().unwrap().template.path
+    pub fn secret_path(&self) -> Result<PathBuf> {
+        Ok(self.metadata()?.template.path)
     }
 
-    pub fn plaintext_content(&self) -> Result<String, Box<dyn Error>> {
-        let secret_path = self.secret_path();
+    pub fn plaintext_content(&self) -> Result<String> {
+        let secret_path = self.secret_path()?;
 
-        Ok(read_to_string(&secret_path)?)
+        read_to_string(&secret_path).with_context(|| {
+            format!("Failed to read plaintext from {}", secret_path.display())
+        })
     }
 
-    pub fn metadata(&self) -> Result<Metadata, Box<dyn Error>> {
-        let metadata_path = self.metadata_path();
-        let text = read_to_string(&metadata_path)?;
-        let metadata: Metadata = toml::from_str(&text)?;
+    pub fn metadata(&self) -> Result<Metadata> {
+        let metadata_path = self.metadata_path()?;
+        let text = read_to_string(&metadata_path).with_context(|| {
+            format!("Failed to read metadata from {}", metadata_path.display())
+        })?;
+
+        let metadata: Metadata =
+            toml::from_str(&text).context("Failed to parse metadata TOML")?;
 
         Ok(metadata)
     }
@@ -119,18 +127,25 @@ impl Secret {
         &self,
         private_key: Option<&str>,
         password: &str,
-    ) -> Result<String, Box<dyn Error>> {
-        let config = Config::load_config()?;
-        let secret_path = self.secret_path();
-        let ciphertext = read(&secret_path)?;
+    ) -> Result<String> {
+        let config = Config::load_config()
+            .context("Failed to load config for decryption")?;
+        let secret_path = self.secret_path()?;
+        let ciphertext = read(&secret_path).with_context(|| {
+            format!("Failed to read encrypted file {}", secret_path.display())
+        })?;
+
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(
             match private_key {
                 Some(key) => key.to_string(),
-                None => std::fs::read_to_string(&config.private_key_path)?,
+                None => std::fs::read_to_string(&config.private_key_path)
+                    .context("Failed to read private key file")?,
             }
             .as_bytes(),
-        )?;
+        )
+        .context("Failed to parse certificate")?;
+
         let keypair = cert
             .keys()
             .secret()
@@ -139,20 +154,29 @@ impl Secret {
             .revoked(false)
             .for_storage_encryption()
             .nth(0)
-            .ok_or("No suitable decryption key found")?
+            .context("No suitable decryption key found")?
             .key()
             .clone()
-            .parts_into_secret()?
-            .decrypt_secret(&Password::from(password.to_string()))?
-            .into_keypair()?;
+            .parts_into_secret()
+            .context("Failed to get secret key parts")?
+            .decrypt_secret(&Password::from(password.to_string()))
+            .context("Failed to decrypt secret key with password")?
+            .into_keypair()
+            .context("Failed to create keypair")?;
+
         let helper = DecryptHelper::new(keypair);
-        let mut decryptor = DecryptorBuilder::from_bytes(&ciphertext)?
-            .with_policy(policy, None, helper)?;
+        let mut decryptor = DecryptorBuilder::from_bytes(&ciphertext)
+            .context("Failed to create decryptor")?
+            .with_policy(policy, None, helper)
+            .context("Failed to configure decryptor policy")?;
+
         let mut plaintext = Vec::new();
 
-        std::io::copy(&mut decryptor, &mut plaintext)?;
+        std::io::copy(&mut decryptor, &mut plaintext)
+            .context("Failed to decrypt content")?;
 
-        let result = String::from_utf8(plaintext)?;
+        let result = String::from_utf8(plaintext)
+            .context("Decrypted content is not valid UTF-8")?;
 
         info!(
             "Successfully decrypted secret: {}",
@@ -167,31 +191,39 @@ impl Secret {
         content: &str,
         metadata: &BaseMetadata,
         public_key: Option<&str>,
-    ) -> Result<&Self, Box<dyn Error>> {
-        let secret_path = self.secret_path();
-        let metadata_path = self.metadata_path();
+    ) -> Result<&Self> {
+        let secret_path = self.secret_path()?;
+        let metadata_path = self.metadata_path()?;
 
         if secret_path.exists() || metadata_path.exists() {
-            return Err("Secret or metadata file already exists".into());
+            return Err(anyhow::anyhow!(
+                "Secret or metadata file already exists"
+            ));
         }
 
         if let Some(parent) = secret_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create secret directory")?;
         }
 
         if let Some(parent) = metadata_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create metadata directory")?;
         }
 
-        let config = Config::load_config()?;
+        let config = Config::load_config()
+            .context("Failed to load config for encryption")?;
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(
             match public_key {
                 Some(key) => key.to_string(),
-                None => std::fs::read_to_string(&config.public_key_path)?,
+                None => std::fs::read_to_string(&config.public_key_path)
+                    .context("Failed to read public key file")?,
             }
             .as_bytes(),
-        )?;
+        )
+        .context("Failed to parse public key certificate")?;
+
         let recipients: Vec<Recipient> = cert
             .keys()
             .with_policy(policy, None)
@@ -202,20 +234,29 @@ impl Secret {
             .collect();
 
         if recipients.is_empty() {
-            return Err("No suitable encryption key found in public key".into());
+            return Err(anyhow::anyhow!(
+                "No suitable encryption key found in public key"
+            ));
         }
 
         let mut encrypted = Vec::new();
         let message = Message::new(&mut encrypted);
-        let mut encryptor =
-            Encryptor::for_recipients(message, recipients).build()?;
+        let mut encryptor = Encryptor::for_recipients(message, recipients)
+            .build()
+            .context("Failed to create encryptor")?;
 
-        encryptor.write(content.as_bytes())?;
-        encryptor.finalize()?;
+        encryptor
+            .write(content.as_bytes())
+            .context("Failed to write content to encryptor")?;
+        encryptor
+            .finalize()
+            .context("Failed to finalize encryption")?;
 
-        secure_write(&secret_path, encrypted)?;
+        secure_write(&secret_path, encrypted)
+            .context("Failed to write encrypted secret file")?;
 
-        let checksum_main = compute_checksum(&secret_path)?;
+        let checksum_main = compute_checksum(&secret_path)
+            .context("Failed to compute secret file checksum")?;
         let mut meta = Metadata {
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
@@ -223,12 +264,23 @@ impl Secret {
             ..metadata.clone().into()
         };
 
-        secure_write(&metadata_path, toml::to_string_pretty(&meta)?)?;
+        secure_write(
+            &metadata_path,
+            toml::to_string_pretty(&meta)
+                .context("Failed to serialize metadata")?,
+        )
+        .context("Failed to write metadata file")?;
 
         meta.template.path = secret_path;
-        meta.checksum_meta = compute_checksum(&metadata_path)?;
+        meta.checksum_meta = compute_checksum(&metadata_path)
+            .context("Failed to compute metadata file checksum")?;
 
-        secure_write(&metadata_path, toml::to_string_pretty(&meta)?)?;
+        secure_write(
+            &metadata_path,
+            toml::to_string_pretty(&meta)
+                .context("Failed to serialize updated metadata")?,
+        )
+        .context("Failed to write updated metadata file")?;
 
         info!("Created secret: {}", self.relative_path.display());
 
@@ -240,22 +292,30 @@ impl Secret {
         content: Option<&str>,
         metadata: Option<&BaseMetadata>,
         public_key: Option<&str>,
-    ) -> Result<&Self, Box<dyn Error>> {
-        let secret_path = self.secret_path();
-        let metadata_path = self.metadata_path();
+    ) -> Result<&Self> {
+        let secret_path = self.secret_path()?;
+        let metadata_path = self.metadata_path()?;
 
         if !secret_path.exists() || !metadata_path.exists() {
-            return Err("Secret or metadata file does not exist".into());
+            return Err(anyhow::anyhow!(
+                "Secret or metadata file does not exist"
+            ));
         }
 
-        let config = Config::load_config()?;
-        let mut updated_metadata: Metadata =
-            toml::from_str(&read_to_string(&metadata_path)?)?;
+        let config = Config::load_config()
+            .context("Failed to load config for update")?;
+        let mut updated_metadata: Metadata = toml::from_str(
+            &read_to_string(&metadata_path)
+                .context("Failed to read existing metadata")?,
+        )
+        .context("Failed to parse existing metadata")?;
 
         if let Some(base) = metadata {
             let base_as_metadata: Metadata = base.clone().into();
 
-            updated_metadata = updated_metadata.merge(&base_as_metadata)?;
+            updated_metadata = updated_metadata
+                .merge(&base_as_metadata)
+                .context("Failed to merge metadata")?;
         }
 
         if let Some(content) = content {
@@ -263,10 +323,13 @@ impl Secret {
             let cert = Cert::from_bytes(
                 match public_key {
                     Some(key) => key.to_string(),
-                    None => std::fs::read_to_string(&config.public_key_path)?,
+                    None => std::fs::read_to_string(&config.public_key_path)
+                        .context("Failed to read public key file")?,
                 }
                 .as_bytes(),
-            )?;
+            )
+            .context("Failed to parse public key certificate")?;
+
             let recipients: Vec<Recipient> = cert
                 .keys()
                 .with_policy(policy, None)
@@ -277,24 +340,31 @@ impl Secret {
                 .collect();
 
             if recipients.is_empty() {
-                return Err(
-                    "No suitable encryption key found in public key".into()
-                );
+                return Err(anyhow::anyhow!(
+                    "No suitable encryption key found in public key"
+                ));
             }
 
             let mut encrypted = Vec::new();
             let message = Message::new(&mut encrypted);
-            let mut encryptor =
-                Encryptor::for_recipients(message, recipients).build()?;
+            let mut encryptor = Encryptor::for_recipients(message, recipients)
+                .build()
+                .context("Failed to create encryptor for update")?;
 
-            encryptor.write(content.as_bytes())?;
-            encryptor.finalize()?;
+            encryptor
+                .write(content.as_bytes())
+                .context("Failed to write updated content to encryptor")?;
+            encryptor
+                .finalize()
+                .context("Failed to finalize encryption for update")?;
 
-            secure_write(&secret_path, encrypted)?;
+            secure_write(&secret_path, encrypted)
+                .context("Failed to write updated encrypted secret file")?;
 
             updated_metadata.fingerprint =
                 cert.fingerprint().to_hex().to_uppercase();
-            updated_metadata.checksum_main = compute_checksum(&secret_path)?;
+            updated_metadata.checksum_main = compute_checksum(&secret_path)
+                .context("Failed to compute updated secret file checksum")?;
         }
 
         updated_metadata.modifications =
@@ -304,15 +374,20 @@ impl Secret {
 
         secure_write(
             &metadata_path,
-            toml::to_string_pretty(&updated_metadata)?,
-        )?;
+            toml::to_string_pretty(&updated_metadata)
+                .context("Failed to serialize updated metadata")?,
+        )
+        .context("Failed to write updated metadata file")?;
 
-        updated_metadata.checksum_meta = compute_checksum(&metadata_path)?;
+        updated_metadata.checksum_meta = compute_checksum(&metadata_path)
+            .context("Failed to compute updated metadata file checksum")?;
 
         secure_write(
             &metadata_path,
-            toml::to_string_pretty(&updated_metadata)?,
-        )?;
+            toml::to_string_pretty(&updated_metadata)
+                .context("Failed to serialize final metadata")?,
+        )
+        .context("Failed to write final metadata file")?;
 
         info!(
             "Updated secret: {} (modifications: {})",
@@ -323,8 +398,8 @@ impl Secret {
         Ok(self)
     }
 
-    pub fn remove(&self) -> Result<(), Box<dyn Error>> {
-        let paths = [self.secret_path(), self.metadata_path()];
+    pub fn remove(&self) -> Result<()> {
+        let paths = [self.secret_path()?, self.metadata_path()?];
         let mut errors = Vec::new();
 
         for path in &paths {
@@ -341,7 +416,10 @@ impl Secret {
 
         if !errors.is_empty() {
             error!("Removal errors: {}", errors.join("; "));
-            return Err(errors.join("; ").into());
+            return Err(anyhow::anyhow!(
+                "Removal errors: {}",
+                errors.join("; ")
+            ));
         }
 
         info!("Removed secret: {}", self.relative_path.display());
@@ -349,52 +427,54 @@ impl Secret {
         Ok(())
     }
 
-    pub fn move_to(
-        &self,
-        destination: PathBuf,
-    ) -> Result<Secret, Box<dyn Error>> {
+    pub fn move_to(&self, destination: PathBuf) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
         };
-        let current_secret_path = self.secret_path();
-        let current_metadata_path = self.metadata_path();
-        let dest_secret_path = destination_secret.secret_path();
-        let dest_metadata_path = destination_secret.metadata_path();
+        let current_secret_path = self.secret_path()?;
+        let current_metadata_path = self.metadata_path()?;
+        let dest_secret_path = destination_secret.secret_path()?;
+        let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create destination metadata directory")?;
         }
 
-        rename(&current_secret_path, &dest_secret_path)?;
-        rename(&current_metadata_path, &dest_metadata_path)?;
+        rename(&current_secret_path, &dest_secret_path)
+            .context("Failed to move secret file")?;
+        rename(&current_metadata_path, &dest_metadata_path)
+            .context("Failed to move metadata file")?;
 
         Ok(destination_secret)
     }
 
-    pub fn copy_to(
-        &self,
-        destination: PathBuf,
-    ) -> Result<Secret, Box<dyn Error>> {
+    pub fn copy_to(&self, destination: PathBuf) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
         };
-        let current_secret_path = self.secret_path();
-        let current_metadata_path = self.metadata_path();
-        let dest_secret_path = destination_secret.secret_path();
-        let dest_metadata_path = destination_secret.metadata_path();
+        let current_secret_path = self.secret_path()?;
+        let current_metadata_path = self.metadata_path()?;
+        let dest_secret_path = destination_secret.secret_path()?;
+        let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {
-            secure_create_dir_all(parent)?;
+            secure_create_dir_all(parent)
+                .context("Failed to create destination metadata directory")?;
         }
 
-        copy(&current_secret_path, &dest_secret_path)?;
-        copy(&current_metadata_path, &dest_metadata_path)?;
+        copy(&current_secret_path, &dest_secret_path)
+            .context("Failed to copy secret file")?;
+        copy(&current_metadata_path, &dest_metadata_path)
+            .context("Failed to copy metadata file")?;
 
         Ok(destination_secret)
     }
@@ -405,18 +485,20 @@ impl Secret {
         public_key: &str,
         private_key: Option<&str>,
         password: &str,
-    ) -> Result<Secret, Box<dyn Error>> {
+    ) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
         };
-        let decrypted_content = self.content(private_key, password)?;
-        let metadata = self.metadata()?;
+        let decrypted_content = self
+            .content(private_key, password)
+            .context("Failed to decrypt content for cloning")?;
+        let metadata = self
+            .metadata()
+            .context("Failed to read metadata for cloning")?;
 
-        destination_secret.create(
-            &decrypted_content,
-            &metadata.to_base(),
-            Some(public_key),
-        )?;
+        destination_secret
+            .create(&decrypted_content, &metadata.to_base(), Some(public_key))
+            .context("Failed to create cloned secret")?;
 
         Ok(destination_secret)
     }
@@ -427,13 +509,14 @@ impl Secret {
         mut sort: Option<C>,
         offset: Option<usize>,
         limit: Option<usize>,
-    ) -> Result<Vec<Secret>, Box<dyn Error>>
+    ) -> Result<Vec<Secret>>
     where
         F: Fn(&PathBuf, &Metadata) -> bool,
         C: FnMut(&PathBuf, &Metadata) -> Ordering,
     {
         let mut results = Vec::new();
-        let config = Config::load_config()?;
+        let config = Config::load_config()
+            .context("Failed to load config for search")?;
 
         for entry in WalkDir::new(&config.metadata_dir)
             .into_iter()
@@ -464,6 +547,7 @@ impl Secret {
             };
 
             let mut base = relative_path.to_path_buf();
+
             base.set_file_name(file_stem);
 
             let secret = Secret {

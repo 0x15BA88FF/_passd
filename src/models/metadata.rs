@@ -1,3 +1,4 @@
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
@@ -50,7 +51,7 @@ impl Default for Metadata {
             template: BaseMetadata::default(),
             modifications: 0,
             fingerprint: String::new(),
-            created_at: now.clone(),
+            created_at: now,
             updated_at: now,
             checksum_main: String::new(),
             checksum_meta: String::new(),
@@ -77,19 +78,18 @@ impl Metadata {
     pub fn to_base(&self) -> BaseMetadata {
         self.template.clone()
     }
-}
 
-impl Metadata {
-    pub fn merge(
-        &self,
-        other: &Metadata,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut self_value = toml::Value::try_from(self.clone())?;
-        let other_value = toml::Value::try_from(other.clone())?;
+    pub fn merge(&self, other: &Metadata) -> Result<Self> {
+        let mut self_value = toml::Value::try_from(self.clone())
+            .context("Failed to convert current metadata to TOML value")?;
+
+        let other_value = toml::Value::try_from(other.clone())
+            .context("Failed to convert other metadata to TOML value")?;
 
         merge_toml(&mut self_value, &other_value);
 
-        let merged: Metadata = toml::from_str(&self_value.to_string())?;
+        let merged: Metadata = toml::from_str(&self_value.to_string())
+            .context("Failed to deserialize merged metadata from TOML")?;
 
         Ok(merged)
     }
@@ -111,9 +111,7 @@ fn merge_toml(base: &mut TomlValue, other: &TomlValue) {
             base_array.extend(other_array.clone());
         }
         (base_val, other_val) => {
-            let new_value = other_val.clone();
-
-            *base_val = new_value;
+            *base_val = other_val.clone();
         }
     }
 }
