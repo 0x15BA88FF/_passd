@@ -10,10 +10,8 @@ pub struct BaseMetadata {
     pub category: String,
     pub tags: Vec<String>,
     pub description: String,
-
     #[serde(default)]
     pub attachments: Vec<String>,
-
     #[serde(flatten)]
     pub extra: Option<HashMap<String, TomlValue>>,
 }
@@ -22,13 +20,10 @@ pub struct BaseMetadata {
 pub struct Metadata {
     #[serde(flatten)]
     pub template: BaseMetadata,
-
     pub modifications: u32,
     pub fingerprint: String,
-
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-
     pub checksum_main: String,
     pub checksum_meta: String,
 }
