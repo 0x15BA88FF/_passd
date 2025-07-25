@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 use toml::{self, Value as TomlValue};
@@ -26,8 +26,8 @@ pub struct Metadata {
     pub modifications: u32,
     pub fingerprint: String,
 
-    pub created_at: String,
-    pub updated_at: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 
     pub checksum_main: String,
     pub checksum_meta: String,
@@ -36,6 +36,7 @@ pub struct Metadata {
 impl Default for BaseMetadata {
     fn default() -> Self {
         Self {
+            path: PathBuf::new(),
             r#type: "general".to_string(),
             category: "uncategorized".to_string(),
             tags: Vec::new(),
@@ -48,7 +49,7 @@ impl Default for BaseMetadata {
 
 impl Default for Metadata {
     fn default() -> Self {
-        let now = Utc::now().to_rfc3339();
+        let now = Utc::now();
 
         Self {
             template: BaseMetadata::default(),
