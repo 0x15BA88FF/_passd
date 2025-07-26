@@ -1,8 +1,10 @@
+use crate::Config;
 use jsonrpsee::Extensions;
 use jsonrpsee::types::{ErrorObject, Params};
 use log::{error, info};
 use passd::models::{metadata::Metadata, secret::Secret};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct ReadResponse {
@@ -19,7 +21,7 @@ struct ReadParams {
 
 pub fn handler(
     params: Params,
-    _ctx: &(),
+    ctx: &Arc<Config>,
     _ext: &Extensions,
 ) -> Result<ReadResponse, ErrorObject<'static>> {
     let read_params: ReadParams = params.parse().map_err(|e| {
@@ -34,6 +36,7 @@ pub fn handler(
 
     let secret = Secret {
         relative_path: read_params.path.clone().into(),
+        config: Arc::clone(ctx),
     };
 
     let metadata = match secret.metadata() {
