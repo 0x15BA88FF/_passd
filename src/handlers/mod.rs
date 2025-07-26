@@ -1,5 +1,7 @@
+use crate::Config;
 use anyhow::Result;
 use jsonrpsee::RpcModule;
+use std::sync::Arc;
 
 pub mod clone_to;
 pub mod copy_to;
@@ -9,7 +11,7 @@ pub mod move_to;
 pub mod read;
 pub mod update;
 
-pub fn register_handlers(module: &mut RpcModule<()>) -> Result<()> {
+pub fn register_handlers(module: &mut RpcModule<Arc<Config>>) -> Result<()> {
     module.register_method("create", create::handler)?;
     module.register_method("update", update::handler)?;
     module.register_method("delete", delete::handler)?;
