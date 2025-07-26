@@ -1,8 +1,12 @@
-use jsonrpsee::Extensions;
-use jsonrpsee::types::{ErrorObject, Params};
+use crate::Config;
+use jsonrpsee::{
+    Extensions,
+    types::{ErrorObject, Params},
+};
 use log::{error, info};
 use passd::models::{metadata::BaseMetadata, secret::Secret};
 use serde::Deserialize;
+use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
 struct CreateParams {
@@ -14,7 +18,7 @@ struct CreateParams {
 
 pub fn handler(
     params: Params,
-    _ctx: &(),
+    ctx: &Arc<Config>,
     _ext: &Extensions,
 ) -> Result<String, ErrorObject<'static>> {
     let create_params: CreateParams = params.parse().map_err(|e| {
@@ -29,6 +33,7 @@ pub fn handler(
 
     match (Secret {
         relative_path: create_params.path.clone().into(),
+        config: Arc::clone(ctx),
     })
     .create(
         &create_params.content,
