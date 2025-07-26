@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
 
     let mut module = RpcModule::new(Arc::new(config));
 
-    handlers::register_handlers(&mut module, &config)
+    handlers::register_handlers(&mut module)
         .context("Failed to register handlers")?;
 
     let server = ServerBuilder::default()
