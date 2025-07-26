@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use jsonrpsee::{RpcModule, server::ServerBuilder};
 use log::info;
 use passd::{models::config::Config, utils::logger::init_logger};
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
 mod handlers;
 
@@ -18,9 +18,9 @@ async fn main() -> Result<()> {
         .parse()
         .context("Failed to parse server address")?;
 
-    let mut module = RpcModule::new(());
+    let mut module = RpcModule::new(Arc::new(config));
 
-    handlers::register_handlers(&mut module)
+    handlers::register_handlers(&mut module, &config)
         .context("Failed to register handlers")?;
 
     let server = ServerBuilder::default()
