@@ -28,6 +28,7 @@ use std::{
     fs::{copy, read, read_to_string, remove_file, rename},
     io::Write,
     path::PathBuf,
+    sync::Arc,
 };
 use toml;
 use walkdir::WalkDir;
@@ -72,28 +73,27 @@ impl DecryptionHelper for DecryptHelper {
                 }
             }
         }
-
         Ok(None)
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Secret {
     pub relative_path: PathBuf,
+    pub config: Arc<Config>,
 }
 
 impl Secret {
-    pub fn new(relative_path: impl Into<PathBuf>) -> Self {
+    pub fn new(relative_path: PathBuf, config: Arc<Config>) -> Self {
         Self {
-            relative_path: relative_path.into(),
+            relative_path,
+            config,
         }
     }
 
     pub fn metadata_path(&self) -> Result<PathBuf> {
-        let config = Config::load_config()
-            .context("Failed to load config for metadata path")?;
-
-        Ok(config
+        Ok(self
+            .config
             .metadata_dir
             .join(&self.relative_path)
             .with_extension("meta.toml"))
@@ -105,7 +105,6 @@ impl Secret {
 
     pub fn plaintext_content(&self) -> Result<String> {
         let secret_path = self.secret_path()?;
-
         read_to_string(&secret_path).with_context(|| {
             format!("Failed to read plaintext from {}", secret_path.display())
         })
@@ -116,10 +115,8 @@ impl Secret {
         let text = read_to_string(&metadata_path).with_context(|| {
             format!("Failed to read metadata from {}", metadata_path.display())
         })?;
-
         let metadata: Metadata =
             toml::from_str(&text).context("Failed to parse metadata TOML")?;
-
         Ok(metadata)
     }
 
@@ -128,8 +125,6 @@ impl Secret {
         private_key: Option<&str>,
         password: &str,
     ) -> Result<String> {
-        let config = Config::load_config()
-            .context("Failed to load config for decryption")?;
         let secret_path = self.secret_path()?;
         let ciphertext = read(&secret_path).with_context(|| {
             format!("Failed to read encrypted file {}", secret_path.display())
@@ -139,7 +134,7 @@ impl Secret {
         let cert = Cert::from_bytes(
             match private_key {
                 Some(key) => key.to_string(),
-                None => std::fs::read_to_string(&config.private_key_path)
+                None => read_to_string(&self.config.private_key_path)
                     .context("Failed to read private key file")?,
             }
             .as_bytes(),
@@ -171,7 +166,6 @@ impl Secret {
             .context("Failed to configure decryptor policy")?;
 
         let mut plaintext = Vec::new();
-
         std::io::copy(&mut decryptor, &mut plaintext)
             .context("Failed to decrypt content")?;
 
@@ -182,7 +176,6 @@ impl Secret {
             "Successfully decrypted secret: {}",
             self.relative_path.display()
         );
-
         Ok(result)
     }
 
@@ -205,19 +198,16 @@ impl Secret {
             secure_create_dir_all(parent)
                 .context("Failed to create secret directory")?;
         }
-
         if let Some(parent) = metadata_path.parent() {
             secure_create_dir_all(parent)
                 .context("Failed to create metadata directory")?;
         }
 
-        let config = Config::load_config()
-            .context("Failed to load config for encryption")?;
         let policy = &StandardPolicy::new();
         let cert = Cert::from_bytes(
             match public_key {
                 Some(key) => key.to_string(),
-                None => std::fs::read_to_string(&config.public_key_path)
+                None => read_to_string(&self.config.public_key_path)
                     .context("Failed to read public key file")?,
             }
             .as_bytes(),
@@ -302,8 +292,6 @@ impl Secret {
             ));
         }
 
-        let config = Config::load_config()
-            .context("Failed to load config for update")?;
         let mut updated_metadata: Metadata = toml::from_str(
             &read_to_string(&metadata_path)
                 .context("Failed to read existing metadata")?,
@@ -312,7 +300,6 @@ impl Secret {
 
         if let Some(base) = metadata {
             let base_as_metadata: Metadata = base.clone().into();
-
             updated_metadata = updated_metadata
                 .merge(&base_as_metadata)
                 .context("Failed to merge metadata")?;
@@ -323,7 +310,7 @@ impl Secret {
             let cert = Cert::from_bytes(
                 match public_key {
                     Some(key) => key.to_string(),
-                    None => std::fs::read_to_string(&config.public_key_path)
+                    None => read_to_string(&self.config.public_key_path)
                         .context("Failed to read public key file")?,
                 }
                 .as_bytes(),
@@ -423,13 +410,13 @@ impl Secret {
         }
 
         info!("Removed secret: {}", self.relative_path.display());
-
         Ok(())
     }
 
     pub fn move_to(&self, destination: PathBuf) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
+            config: Arc::clone(&self.config),
         };
         let current_secret_path = self.secret_path()?;
         let current_metadata_path = self.metadata_path()?;
@@ -456,6 +443,7 @@ impl Secret {
     pub fn copy_to(&self, destination: PathBuf) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
+            config: Arc::clone(&self.config),
         };
         let current_secret_path = self.secret_path()?;
         let current_metadata_path = self.metadata_path()?;
@@ -488,6 +476,7 @@ impl Secret {
     ) -> Result<Secret> {
         let destination_secret = Secret {
             relative_path: destination,
+            config: Arc::clone(&self.config),
         };
         let decrypted_content = self
             .content(private_key, password)
@@ -509,16 +498,14 @@ impl Secret {
         mut sort: Option<C>,
         offset: Option<usize>,
         limit: Option<usize>,
-    ) -> Result<Vec<Secret>>
+    ) -> Result<Vec<Arc<Secret>>>
     where
         F: Fn(&PathBuf, &Metadata) -> bool,
         C: FnMut(&PathBuf, &Metadata) -> Ordering,
     {
         let mut results = Vec::new();
-        let config = Config::load_config()
-            .context("Failed to load config for search")?;
 
-        for entry in WalkDir::new(&config.metadata_dir)
+        for entry in WalkDir::new(&self.config.metadata_dir)
             .into_iter()
             .filter_map(Result::ok)
             .filter(|e| {
@@ -532,7 +519,7 @@ impl Secret {
         {
             let full_path = entry.path();
             let relative_path =
-                match full_path.strip_prefix(&config.metadata_dir) {
+                match full_path.strip_prefix(&self.config.metadata_dir) {
                     Ok(r) => r,
                     Err(_) => continue,
                 };
@@ -547,12 +534,12 @@ impl Secret {
             };
 
             let mut base = relative_path.to_path_buf();
-
             base.set_file_name(file_stem);
 
-            let secret = Secret {
-                relative_path: base.clone(),
-            };
+            let secret = Arc::new(Secret {
+                relative_path: base,
+                config: Arc::clone(&self.config),
+            });
 
             let metadata = match secret.metadata() {
                 Ok(m) => m,
@@ -579,9 +566,9 @@ impl Secret {
         let start = offset.unwrap_or(0).min(total);
         let end = limit.map_or(total, |l| (start + l).min(total));
 
-        let response = results[start..end]
+        let response: Vec<Arc<Secret>> = results[start..end]
             .iter()
-            .map(|(secret, _)| secret.clone())
+            .map(|(secret, _)| Arc::clone(secret))
             .collect();
 
         Ok(response)
