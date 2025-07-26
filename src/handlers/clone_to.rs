@@ -1,9 +1,11 @@
+use crate::Config;
 use jsonrpsee::Extensions;
 use jsonrpsee::types::{ErrorObject, Params};
 use log::{error, info};
 use passd::models::secret::Secret;
 use serde::Deserialize;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 #[derive(Debug, Deserialize)]
 struct CloneParams {
@@ -16,7 +18,7 @@ struct CloneParams {
 
 pub fn handler(
     params: Params,
-    _ctx: &(),
+    ctx: &Arc<Config>,
     _ext: &Extensions,
 ) -> Result<String, ErrorObject<'static>> {
     let clone_params: CloneParams = params.parse().map_err(|e| {
@@ -31,6 +33,7 @@ pub fn handler(
 
     match (Secret {
         relative_path: clone_params.from_path.clone().into(),
+        config: Arc::clone(ctx),
     })
     .clone_to(
         PathBuf::from(&clone_params.to_path),
