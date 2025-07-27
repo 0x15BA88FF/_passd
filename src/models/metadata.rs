@@ -1,6 +1,7 @@
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_json::{Value, to_value};
 use std::{collections::HashMap, path::PathBuf};
 use toml::{self, Value as TomlValue};
 
@@ -93,6 +94,15 @@ impl Metadata {
 
         Ok(merged)
     }
+
+    pub fn get_field(
+        &self,
+        field_path: &str,
+    ) -> serde_json::Result<Option<Value>> {
+        let json_value = to_value(self)?;
+
+        Ok(get_nested_field(&json_value, field_path))
+    }
 }
 
 fn merge_toml(base: &mut TomlValue, other: &TomlValue) {
@@ -114,4 +124,20 @@ fn merge_toml(base: &mut TomlValue, other: &TomlValue) {
             *base_val = other_val.clone();
         }
     }
+}
+
+fn get_nested_field(value: &Value, path: &str) -> Option<Value> {
+    let parts: Vec<&str> = path.split('.').collect();
+    let mut current = value;
+
+    for part in parts {
+        match current {
+            Value::Object(map) => {
+                current = map.get(part)?;
+            }
+            _ => return None,
+        }
+    }
+
+    Some(current.clone())
 }
