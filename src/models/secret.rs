@@ -98,11 +98,16 @@ impl Secret {
     }
 
     pub fn secret_path(&self) -> Result<PathBuf> {
-        Ok(self.metadata()?.template.path)
+        Ok(self
+            .config
+            .vault_dir
+            .join(&self.relative_path)
+            .with_extension("pgp"))
     }
 
     pub fn plaintext_content(&self) -> Result<String> {
         let secret_path = self.secret_path()?;
+
         read_to_string(&secret_path).with_context(|| {
             format!("Failed to read plaintext from {}", secret_path.display())
         })
@@ -115,6 +120,7 @@ impl Secret {
         })?;
         let metadata: Metadata =
             toml::from_str(&text).context("Failed to parse metadata TOML")?;
+
         Ok(metadata)
     }
 
@@ -193,11 +199,15 @@ impl Secret {
         }
 
         if let Some(parent) = secret_path.parent() {
-            secure_create_dir_all(parent)
-                .context("Failed to create secret directory")?;
+            secure_create_dir_all(parent, &self.config.vault_dir).context(
+                format!(
+                    "Failed to create secret directory {}",
+                    parent.display(),
+                ),
+            )?;
         }
         if let Some(parent) = metadata_path.parent() {
-            secure_create_dir_all(parent)
+            secure_create_dir_all(parent, &self.config.metadata_dir)
                 .context("Failed to create metadata directory")?;
         }
 
@@ -422,11 +432,11 @@ impl Secret {
         let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent)
+            secure_create_dir_all(parent, &self.config.vault_dir)
                 .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {
-            secure_create_dir_all(parent)
+            secure_create_dir_all(parent, &self.config.metadata_dir)
                 .context("Failed to create destination metadata directory")?;
         }
 
@@ -449,11 +459,11 @@ impl Secret {
         let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent)
+            secure_create_dir_all(parent, &self.config.vault_dir)
                 .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {
-            secure_create_dir_all(parent)
+            secure_create_dir_all(parent, &self.config.metadata_dir)
                 .context("Failed to create destination metadata directory")?;
         }
 
