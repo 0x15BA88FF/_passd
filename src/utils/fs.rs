@@ -1,18 +1,31 @@
 use std::{
     fs::{self, Permissions},
     os::unix::fs::{OpenOptionsExt, PermissionsExt},
-    path::{Path, PathBuf},
+    path::Path,
 };
 
-pub fn secure_create_dir_all(path: &Path) -> std::io::Result<()> {
+pub fn secure_create_dir_all(
+    path: &Path,
+    base_path: &Path,
+) -> std::io::Result<()> {
     fs::create_dir_all(path)?;
 
-    let mut current = PathBuf::new();
+    let relative_path = match path.strip_prefix(base_path) {
+        Ok(rel) => rel,
+        Err(_) => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "Path is not under the specified base path",
+            ));
+        }
+    };
 
-    for part in path.components() {
-        current.push(part);
+    let mut current = base_path.to_path_buf();
 
-        if current.is_dir() {
+    for component in relative_path.components() {
+        current.push(component);
+
+        if current.exists() && current.is_dir() {
             fs::set_permissions(&current, Permissions::from_mode(0o700))?;
         }
     }
