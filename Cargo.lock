@@ -1303,6 +1303,7 @@ dependencies = [
  "fern",
  "jsonrpsee",
  "log",
+ "regex",
  "sequoia-openpgp",
  "serde",
  "serde_json",
