@@ -21,7 +21,9 @@ use sequoia_openpgp::{
         },
     },
     policy::StandardPolicy,
-    serialize::stream::{Encryptor, Message, Recipient},
+    serialize::stream::{
+        Armorer, Encryptor, LiteralWriter, Message, Recipient,
+    },
 };
 use std::{
     fs::{copy, read, read_to_string, remove_file, rename},
@@ -239,16 +241,21 @@ impl Secret {
 
         let mut encrypted = Vec::new();
         let message = Message::new(&mut encrypted);
-        let mut encryptor = Encryptor::for_recipients(message, recipients)
-            .build()
-            .context("Failed to create encryptor")?;
 
-        encryptor
-            .write(content.as_bytes())
-            .context("Failed to write content to encryptor")?;
-        encryptor
-            .finalize()
-            .context("Failed to finalize encryption")?;
+        let message = Armorer::new(message)
+            .build()
+            .expect("Trying to armor the message");
+        let message = Encryptor::for_recipients(message, recipients)
+            .build()
+            .expect("Trying to build encrypted message");
+        let mut message = LiteralWriter::new(message)
+            .build()
+            .expect("Trying to build armored ascii Writer");
+
+        message
+            .write_all(content.as_bytes())
+            .expect("Trying to write out data to encrypted stream");
+        message.finalize().expect("Trying to finalize encryption");
 
         secure_write(&secret_path, encrypted)
             .context("Failed to write encrypted secret file")?;
@@ -341,17 +348,22 @@ impl Secret {
             }
 
             let mut encrypted = Vec::new();
-            let message = Message::new(&mut encrypted);
-            let mut encryptor = Encryptor::for_recipients(message, recipients)
-                .build()
-                .context("Failed to create encryptor for update")?;
 
-            encryptor
-                .write(content.as_bytes())
-                .context("Failed to write updated content to encryptor")?;
-            encryptor
-                .finalize()
-                .context("Failed to finalize encryption for update")?;
+            let message = Message::new(&mut encrypted);
+            let message = Armorer::new(message)
+                .build()
+                .expect("Trying to armor the message");
+            let message = Encryptor::for_recipients(message, recipients)
+                .build()
+                .expect("Trying to build encrypted message");
+            let mut message = LiteralWriter::new(message)
+                .build()
+                .expect("Trying to build armored ascii Writer");
+
+            message
+                .write_all(content.as_bytes())
+                .expect("Trying to write out data to encrypted stream");
+            message.finalize().expect("Trying to finalize encryption");
 
             secure_write(&secret_path, encrypted)
                 .context("Failed to write updated encrypted secret file")?;
