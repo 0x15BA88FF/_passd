@@ -18,9 +18,6 @@ pub struct Config {
     pub private_key_path: PathBuf,
     pub address: IpAddr,
     pub port: u16,
-    pub enable_tls: bool,
-    pub tls_cert_path: PathBuf,
-    pub tls_key_path: PathBuf,
     #[serde(default)]
     pub metadata_template: Option<BaseMetadata>,
 }
@@ -41,9 +38,6 @@ impl Default for Config {
             private_key_path: base_dir.join(".keys/private.asc"),
             address: "127.0.0.1".parse().unwrap(),
             port: 7117,
-            enable_tls: true,
-            tls_cert_path: base_dir.join(".ssl/server.crt"),
-            tls_key_path: base_dir.join(".ssl/server.key"),
             metadata_template: Some(BaseMetadata::default()),
         }
     }
