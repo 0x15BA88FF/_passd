@@ -276,7 +276,7 @@ impl Secret {
         )
         .context("Failed to write metadata file")?;
 
-        meta.template.path = secret_path;
+        meta.template.path = Some(secret_path);
         meta.checksum_meta = compute_checksum(&metadata_path)
             .context("Failed to compute metadata file checksum")?;
 

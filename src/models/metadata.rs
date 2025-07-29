@@ -7,13 +7,13 @@ use toml::{self, Value as TomlValue};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BaseMetadata {
-    pub path: PathBuf,
-    pub r#type: String,
-    pub category: String,
-    pub tags: Vec<String>,
-    pub description: String,
+    pub path: Option<PathBuf>,
+    pub r#type: Option<String>,
+    pub category: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub description: Option<String>,
     #[serde(default)]
-    pub attachments: Vec<String>,
+    pub attachments: Option<Vec<String>>,
     #[serde(flatten)]
     pub extra: Option<HashMap<String, TomlValue>>,
 }
@@ -33,12 +33,12 @@ pub struct Metadata {
 impl Default for BaseMetadata {
     fn default() -> Self {
         Self {
-            path: PathBuf::new(),
-            r#type: "general".to_string(),
-            category: "uncategorized".to_string(),
-            tags: Vec::new(),
-            description: String::new(),
-            attachments: Vec::new(),
+            path: Some(PathBuf::new()),
+            r#type: Some("general".to_string()),
+            category: Some("uncategorized".to_string()),
+            tags: Some(Vec::new()),
+            description: Some(String::new()),
+            attachments: Some(Vec::new()),
             extra: None,
         }
     }

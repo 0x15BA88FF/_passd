@@ -87,7 +87,7 @@ impl Secrets {
 
         let response = results[start..end]
             .iter()
-            .map(|meta| meta.template.path.clone())
+            .map(|meta| meta.template.path.clone().unwrap())
             .collect();
 
         Ok(response)
