@@ -102,7 +102,7 @@ impl Secret {
     pub fn secret_path(&self) -> Result<PathBuf> {
         Ok(self
             .config
-            .vault_dir
+            .secrets_dir
             .join(&self.relative_path)
             .with_extension("pgp"))
     }
@@ -201,7 +201,7 @@ impl Secret {
         }
 
         if let Some(parent) = secret_path.parent() {
-            secure_create_dir_all(parent, &self.config.vault_dir).context(
+            secure_create_dir_all(parent, &self.config.secrets_dir).context(
                 format!(
                     "Failed to create secret directory {}",
                     parent.display(),
@@ -444,7 +444,7 @@ impl Secret {
         let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent, &self.config.vault_dir)
+            secure_create_dir_all(parent, &self.config.secrets_dir)
                 .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {
@@ -471,7 +471,7 @@ impl Secret {
         let dest_metadata_path = destination_secret.metadata_path()?;
 
         if let Some(parent) = dest_secret_path.parent() {
-            secure_create_dir_all(parent, &self.config.vault_dir)
+            secure_create_dir_all(parent, &self.config.secrets_dir)
                 .context("Failed to create destination secret directory")?;
         }
         if let Some(parent) = dest_metadata_path.parent() {

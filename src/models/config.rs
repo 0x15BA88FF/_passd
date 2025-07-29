@@ -10,7 +10,7 @@ use std::{net::IpAddr, path::PathBuf};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
-    pub vault_dir: PathBuf,
+    pub secrets_dir: PathBuf,
     pub metadata_dir: PathBuf,
     pub log_file: PathBuf,
     pub log_level: String,
@@ -30,7 +30,7 @@ impl Default for Config {
         };
 
         Self {
-            vault_dir: base_dir.join("secrets"),
+            secrets_dir: base_dir.join("secrets"),
             metadata_dir: base_dir.join(".metadata"),
             log_file: base_dir.join(".passd.log"),
             log_level: "info".to_string(),

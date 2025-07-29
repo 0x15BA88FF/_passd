@@ -27,7 +27,7 @@ custom path, supporting:
 
 ```toml
 # Absolute path to the vault directory
-vault_dir = "~/.local/share/passd/vault/"
+secrets_dir = "~/.local/share/passd/vault/"
 
 # Absolute path where logs are stored
 logs_dir = "~/.local/state/passd.log"
