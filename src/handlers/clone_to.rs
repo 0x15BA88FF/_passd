@@ -13,7 +13,7 @@ struct CloneParams {
     to_path: String,
     public_key: String,
     private_key: Option<String>,
-    password: String,
+    password: Option<String>,
 }
 
 pub fn handler(
@@ -39,7 +39,7 @@ pub fn handler(
         PathBuf::from(&clone_params.to_path),
         &clone_params.public_key,
         clone_params.private_key.as_deref(),
-        &clone_params.password,
+        clone_params.password.unwrap_or_default().as_str(),
     ) {
         Ok(_) => {
             info!(
