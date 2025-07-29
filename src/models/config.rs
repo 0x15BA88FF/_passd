@@ -6,7 +6,7 @@ use config::{Config as RawConfig, File};
 use dirs;
 use log::{info, warn};
 use serde::Deserialize;
-use std::path::PathBuf;
+use std::{net::IpAddr, path::PathBuf};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -16,9 +16,11 @@ pub struct Config {
     pub log_level: String,
     pub public_key_path: PathBuf,
     pub private_key_path: PathBuf,
-    pub address: String,
+    pub address: IpAddr,
     pub port: u16,
     pub enable_tls: bool,
+    pub tls_cert_path: PathBuf,
+    pub tls_key_path: PathBuf,
     #[serde(default)]
     pub metadata_template: Option<BaseMetadata>,
 }
@@ -37,9 +39,11 @@ impl Default for Config {
             log_level: "info".to_string(),
             public_key_path: base_dir.join(".keys/public.asc"),
             private_key_path: base_dir.join(".keys/private.asc"),
-            address: "127.0.0.1".to_string(),
+            address: "127.0.0.1".parse().unwrap(),
             port: 7117,
             enable_tls: true,
+            tls_cert_path: base_dir.join(".ssl/server.crt"),
+            tls_key_path: base_dir.join(".ssl/server.key"),
             metadata_template: Some(BaseMetadata::default()),
         }
     }

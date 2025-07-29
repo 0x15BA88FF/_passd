@@ -14,9 +14,7 @@ async fn main() -> Result<()> {
     init_logger(&config.log_file, &config.log_level)
         .context("Failed to initialize logger")?;
 
-    let addr: SocketAddr = format!("{}:{}", config.address, config.port)
-        .parse()
-        .context("Failed to parse server address")?;
+    let addr = SocketAddr::new(config.address, config.port);
 
     let mut module = RpcModule::new(Arc::new(config));
 
