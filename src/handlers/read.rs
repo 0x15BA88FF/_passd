@@ -15,8 +15,8 @@ pub struct ReadResponse {
 #[derive(Debug, Deserialize)]
 struct ReadParams {
     path: String,
-    private_key: String,
-    password: String,
+    private_key: Option<String>,
+    password: Option<String>,
 }
 
 pub fn handler(
@@ -59,9 +59,10 @@ pub fn handler(
         }
     };
 
-    let content = match secret
-        .content(Some(&read_params.private_key), &read_params.password)
-    {
+    let content = match secret.content(
+        read_params.private_key.as_deref(),
+        read_params.password.unwrap_or_default().as_str(),
+    ) {
         Ok(content) => {
             info!("Successfully read secret content {}", read_params.path);
 
