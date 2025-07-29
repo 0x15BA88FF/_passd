@@ -9,8 +9,8 @@ use std::sync::Arc;
 #[derive(Debug, Deserialize)]
 struct UpdateParams {
     path: String,
-    content: String,
-    metadata: BaseMetadata,
+    content: Option<String>,
+    metadata: Option<BaseMetadata>,
     public_key: Option<String>,
 }
 
@@ -34,8 +34,8 @@ pub fn handler(
         config: Arc::clone(ctx),
     })
     .update(
-        Some(&update_params.content),
-        Some(&update_params.metadata),
+        update_params.content.as_deref(),
+        update_params.metadata.as_ref(),
         update_params.public_key.as_deref(),
     ) {
         Ok(_) => {
