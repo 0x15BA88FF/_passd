@@ -263,6 +263,7 @@ impl Secret {
         let checksum_main = compute_checksum(&secret_path)
             .context("Failed to compute secret file checksum")?;
         let mut meta = Metadata {
+            path: Some(secret_path),
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
             checksum_meta: "".to_string(),
@@ -276,7 +277,6 @@ impl Secret {
         )
         .context("Failed to write metadata file")?;
 
-        meta.template.path = Some(secret_path);
         meta.checksum_meta = compute_checksum(&metadata_path)
             .context("Failed to compute metadata file checksum")?;
 

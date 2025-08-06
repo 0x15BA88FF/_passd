@@ -7,7 +7,6 @@ use toml::{self, Value as TomlValue};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BaseMetadata {
-    pub path: Option<PathBuf>,
     pub r#type: Option<String>,
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
@@ -21,6 +20,7 @@ pub struct BaseMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     #[serde(flatten)]
+    pub path: Option<PathBuf>,
     pub template: BaseMetadata,
     pub modifications: u32,
     pub fingerprint: String,
@@ -33,7 +33,6 @@ pub struct Metadata {
 impl Default for BaseMetadata {
     fn default() -> Self {
         Self {
-            path: Some(PathBuf::new()),
             r#type: Some("general".to_string()),
             category: Some("uncategorized".to_string()),
             tags: Some(Vec::new()),
@@ -49,6 +48,7 @@ impl Default for Metadata {
         let now = Utc::now();
 
         Self {
+            path: Some(PathBuf::new()),
             template: BaseMetadata::default(),
             modifications: 0,
             fingerprint: String::new(),
