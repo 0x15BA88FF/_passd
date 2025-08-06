@@ -20,7 +20,7 @@ pub struct BaseMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     #[serde(flatten)]
-    pub path: Option<PathBuf>,
+    pub path: PathBuf,
     pub template: BaseMetadata,
     pub modifications: u32,
     pub fingerprint: String,
