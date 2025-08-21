@@ -10,3 +10,8 @@ pub fn compute_checksum(path: &Path) -> Result<String> {
 
     Ok(format!("{:x}", hash))
 }
+
+pub fn compute_checksum_from_content(content: &str) -> String {
+    let hash = Sha256::digest(content.as_bytes());
+    format!("{:x}", hash)
+}
