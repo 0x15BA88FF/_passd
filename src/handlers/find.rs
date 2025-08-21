@@ -28,7 +28,7 @@ pub struct FieldCondition {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "lowercase")]
 pub enum Filter {
     Not(Box<Filter>),
     And(Vec<Filter>),
@@ -189,14 +189,10 @@ pub fn handler(
 
     match result {
         Ok(secrets) => Ok(secrets),
-        Err(e) => {
-            error!("Failed to find: {}", e);
-
-            Err(ErrorObject::owned(
-                jsonrpsee::types::error::INTERNAL_ERROR_CODE,
-                "Find failed",
-                Some(e.to_string()),
-            ))
-        }
+        Err(e) => Err(ErrorObject::owned(
+            jsonrpsee::types::error::INTERNAL_ERROR_CODE,
+            "Unexpected find error",
+            Some(e.to_string()),
+        )),
     }
 }
