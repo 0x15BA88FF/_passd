@@ -263,7 +263,7 @@ impl Secret {
         let checksum_main = compute_checksum(&secret_path)
             .context("Failed to compute secret file checksum")?;
         let mut meta = Metadata {
-            path: Some(secret_path),
+            path: self.relative_path.clone(),
             fingerprint: cert.fingerprint().to_hex().to_uppercase(),
             checksum_main,
             checksum_meta: "".to_string(),
@@ -434,6 +434,7 @@ impl Secret {
     }
 
     pub fn move_to(&self, destination: PathBuf) -> Result<Secret> {
+        // TODO update metadata path
         let destination_secret = Secret {
             relative_path: destination,
             config: Arc::clone(&self.config),
@@ -461,6 +462,7 @@ impl Secret {
     }
 
     pub fn copy_to(&self, destination: PathBuf) -> Result<Secret> {
+        // TODO update metadata path
         let destination_secret = Secret {
             relative_path: destination,
             config: Arc::clone(&self.config),
@@ -494,6 +496,7 @@ impl Secret {
         private_key: Option<&str>,
         password: &str,
     ) -> Result<Secret> {
+        // TODO update metadata path
         let destination_secret = Secret {
             relative_path: destination,
             config: Arc::clone(&self.config),
