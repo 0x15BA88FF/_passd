@@ -20,8 +20,8 @@ pub struct BaseMetadata {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Metadata {
     #[serde(flatten)]
-    pub path: PathBuf,
     pub template: BaseMetadata,
+    pub path: PathBuf,
     pub modifications: u32,
     pub fingerprint: String,
     pub created_at: DateTime<Utc>,
@@ -48,7 +48,7 @@ impl Default for Metadata {
         let now = Utc::now();
 
         Self {
-            path: Some(PathBuf::new()),
+            path: PathBuf::new(),
             template: BaseMetadata::default(),
             modifications: 0,
             fingerprint: String::new(),
