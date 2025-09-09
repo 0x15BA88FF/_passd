@@ -100,8 +100,6 @@ PASSD automatically sets and updates these:
 
 ```toml
 modifications = 1                  # Increments on every change
-fingerprint = "c345...abcd"       # PGP fingerprint that encrypted the secret
-
 created_at = "2025-07-12T10:00:00Z"
 updated_at = "2025-07-13T10:00:00Z"
 
@@ -118,7 +116,6 @@ category = "work"
 tags = ["ssh", "prod"]
 
 modifications = 1
-fingerprint = "c345...abcd"
 
 created_at = "2025-07-12T10:00:00Z"
 updated_at = "2025-07-13T10:00:00Z"

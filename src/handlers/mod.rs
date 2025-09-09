@@ -10,7 +10,8 @@ pub mod delete;
 pub mod diagnose;
 pub mod find;
 pub mod move_to;
-pub mod read;
+pub mod read_content;
+pub mod read_metadata;
 pub mod update;
 
 macro_rules! register {
@@ -23,15 +24,16 @@ macro_rules! register {
 
 pub fn register_handlers(module: &mut RpcModule<Arc<Config>>) -> Result<()> {
     register!(module, {
-        "create"   => create::handler,
-        "update"   => update::handler,
-        "delete"   => delete::handler,
-        "read"     => read::handler,
-        "move"     => move_to::handler,
-        "copy"     => copy_to::handler,
-        "clone"    => clone_to::handler,
-        "find"     => find::handler,
-        "diagnose" => diagnose::handler,
+        "create"        => create::handler,
+        "update"        => update::handler,
+        "delete"        => delete::handler,
+        "read_content"  => read_content::handler,
+        "read_metadata" => read_metadata::handler,
+        "move"          => move_to::handler,
+        "copy"          => copy_to::handler,
+        "clone"         => clone_to::handler,
+        "find"          => find::handler,
+        "diagnose"      => diagnose::handler,
     });
 
     Ok(())

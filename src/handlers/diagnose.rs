@@ -3,7 +3,7 @@ use jsonrpsee::{
     Extensions,
     types::{ErrorObject, Params},
 };
-use passd::models::secrets::Secrets;
+use passd::models::secret_manager::Secrets;
 use serde_json::Value;
 use std::sync::Arc;
 

@@ -4,7 +4,7 @@ use jsonrpsee::{
     types::{ErrorObject, Params},
 };
 use log::error;
-use passd::models::{metadata::Metadata, secrets::Secrets};
+use passd::models::{metadata::Metadata, secret_manager::Secrets};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;

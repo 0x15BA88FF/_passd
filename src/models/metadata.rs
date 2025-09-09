@@ -1,8 +1,9 @@
+use std::{collections::HashMap, path::PathBuf};
+
 use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, to_value};
-use std::{collections::HashMap, path::PathBuf};
 use toml::{self, Value as TomlValue};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -11,7 +12,6 @@ pub struct BaseMetadata {
     pub category: Option<String>,
     pub tags: Option<Vec<String>>,
     pub description: Option<String>,
-    #[serde(default)]
     pub attachments: Option<Vec<String>>,
     #[serde(flatten)]
     pub extra: Option<HashMap<String, TomlValue>>,
@@ -23,7 +23,6 @@ pub struct Metadata {
     pub template: BaseMetadata,
     pub path: PathBuf,
     pub modifications: u32,
-    pub fingerprint: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     pub checksum_main: String,
@@ -33,7 +32,7 @@ pub struct Metadata {
 impl Default for BaseMetadata {
     fn default() -> Self {
         Self {
-            r#type: Some("general".to_string()),
+            r#type: Some("unkown".to_string()),
             category: Some("uncategorized".to_string()),
             tags: Some(Vec::new()),
             description: Some(String::new()),
@@ -51,7 +50,6 @@ impl Default for Metadata {
             path: PathBuf::new(),
             template: BaseMetadata::default(),
             modifications: 0,
-            fingerprint: String::new(),
             created_at: now,
             updated_at: now,
             checksum_main: String::new(),

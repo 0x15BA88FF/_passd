@@ -34,6 +34,7 @@ pub fn secure_write(
 ) -> std::io::Result<()> {
     use std::fs::OpenOptions;
     use std::io::Write;
+
     let mut file = OpenOptions::new()
         .write(true)
         .create(true)

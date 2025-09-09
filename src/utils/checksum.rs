@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 use std::{fs, path::Path};
 
-pub fn compute_checksum(path: &Path) -> Result<String> {
+pub fn compute_checksum_from_file(path: &Path) -> Result<String> {
     let data = fs::read(path).with_context(|| {
         format!("Failed to read file for checksum: {}", path.display())
     })?;
@@ -11,7 +11,7 @@ pub fn compute_checksum(path: &Path) -> Result<String> {
     Ok(format!("{:x}", hash))
 }
 
-pub fn compute_checksum_from_content(content: &str) -> String {
+pub fn compute_checksum(content: &str) -> String {
     let hash = Sha256::digest(content.as_bytes());
     format!("{:x}", hash)
 }

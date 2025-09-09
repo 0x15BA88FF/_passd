@@ -1,19 +1,12 @@
+use std::{fs::OpenOptions, path::PathBuf};
+
 use anyhow::{Context, Result};
 use chrono::Local;
 use fern::Dispatch;
-use log::LevelFilter;
-use std::{fs::OpenOptions, path::PathBuf};
 
-pub fn init_logger(log_file: &PathBuf, log_level: &String) -> Result<()> {
-    let log_level = match log_level.to_lowercase().as_str() {
-        "debug" => LevelFilter::Debug,
-        "error" => LevelFilter::Error,
-        "warn" => LevelFilter::Warn,
-        "trace" => LevelFilter::Trace,
-        "info" => LevelFilter::Info,
-        _ => LevelFilter::Info,
-    };
+use crate::models::config::LogLevel;
 
+pub fn init_logger(log_file: &PathBuf, log_level: LogLevel) -> Result<()> {
     let mut base_config = Dispatch::new()
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -23,7 +16,7 @@ pub fn init_logger(log_file: &PathBuf, log_level: &String) -> Result<()> {
                 message
             ))
         })
-        .level(log_level)
+        .level(log_level.into())
         .chain(std::io::stdout());
 
     let log_file = OpenOptions::new()

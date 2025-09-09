@@ -1,8 +1,10 @@
+use std::{net::SocketAddr, sync::Arc};
+
 use anyhow::{Context, Result};
 use jsonrpsee::{RpcModule, server::ServerBuilder};
 use log::info;
+
 use passd::{models::config::Config, utils::logger::init_logger};
-use std::{net::SocketAddr, sync::Arc};
 
 mod handlers;
 

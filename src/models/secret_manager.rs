@@ -1,20 +1,22 @@
-use crate::{
-    models::{config::Config, metadata::Metadata, secret::Secret},
-    utils::checksum::compute_checksum_from_content,
-    utils::fs::{is_secure_dir, is_secure_file},
-};
-use anyhow::Result;
-use sequoia_openpgp::{Cert, parse::Parse};
-use serde::Serialize;
 use std::{
     cmp::Ordering,
     path::{Path, PathBuf},
     sync::Arc,
 };
+
+use anyhow::Result;
+use sequoia_openpgp::{Cert, parse::Parse};
+use serde::Serialize;
 use walkdir::WalkDir;
 
+use crate::{
+    models::{config::Config, metadata::Metadata, secret::Secret},
+    utils::checksum::compute_checksum,
+    utils::fs::{is_secure_dir, is_secure_file},
+};
+
 #[derive(Debug)]
-pub struct Secrets {
+pub struct SecretManager {
     pub config: Arc<Config>,
 }
 
@@ -50,7 +52,7 @@ pub struct DiagnosticResult {
     pub message: String,
 }
 
-impl Secrets {
+impl SecretManager {
     pub fn new(config: Arc<Config>) -> Self {
         Self { config }
     }
